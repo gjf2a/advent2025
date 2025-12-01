@@ -194,7 +194,7 @@ mod tests {
     use crate::{
         grid::GridCharWorld,
         multidim::{DirType, ManhattanDir, Position},
-        search_iter::{path_back_from, BfsIter, PrioritySearchIter},
+        search_iter::{BfsIter, PrioritySearchIter, path_back_from},
     };
 
     #[test]

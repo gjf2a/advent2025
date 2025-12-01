@@ -10,7 +10,7 @@ use std::{
 
 use anyhow::anyhow;
 use bare_metal_modulo::NumType;
-use enum_iterator::{all, Sequence};
+use enum_iterator::{Sequence, all};
 
 use crate::all_lines;
 

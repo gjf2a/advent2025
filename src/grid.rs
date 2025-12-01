@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::multidim::{
-    map_width_height, to_map, DirType, Position, RingIterator, RowMajorPositionIterator,
+    DirType, Position, RingIterator, RowMajorPositionIterator, map_width_height, to_map,
 };
 
 pub type GridDigitWorld = GridWorld<ModNumC<u8, 10>>;
