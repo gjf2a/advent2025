@@ -10,20 +10,16 @@ fn main() -> anyhow::Result<()> {
                 println!("{range}: {}", range.span());
             }
         }
-        match part {
-            Part::One => {
-                let total = ranges.iter().map(|r| r.invalid_ids().iter().sum::<u64>()).sum::<u64>();
-                println!("{total}");
-                Ok(())
-            }
-            Part::Two => {
-                todo!("No part 2 yet")
-            }
-        }
+        let total = ranges
+            .iter()
+            .map(|r| r.invalid_ids(part).iter().sum::<u64>())
+            .sum::<u64>();
+        println!("{total}");
+        Ok(())
     })
 }
 
-fn is_invalid_id(id_num: u64) -> bool {
+fn invalid_part_1(id_num: u64) -> bool {
     let num_digits = log_floor(id_num, 10) + 1;
     if num_digits % 2 == 0 {
         let mut id_num = id_num;
@@ -39,6 +35,30 @@ fn is_invalid_id(id_num: u64) -> bool {
     } else {
         false
     }
+}
+
+fn invalid_part_2(id_num: u64) -> bool {
+    let id_str = format!("{id_num}");
+    for prefix_size in 1..=id_str.len() / 2 {
+        if has_repeating_prefix(id_str.as_str(), prefix_size) {
+            return true;
+        }
+    }   
+    false
+}
+
+fn has_repeating_prefix(s: &str, prefix_size: usize) -> bool {
+    if s.len() % prefix_size != 0 {
+        return false;
+    }
+    let prefix = &s[..prefix_size];
+    let rest = &s[prefix_size..];
+    for start in (0..rest.len()).step_by(prefix.len()) {
+        if prefix != &rest[start..start + prefix.len()] {
+            return false;
+        }
+    }
+    true
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -67,8 +87,13 @@ impl Range {
         1 + self.end - self.start
     }
 
-    fn invalid_ids(&self) -> Vec<u64> {
-        (self.start..=self.end).filter(|n| is_invalid_id(*n)).collect()
+    fn invalid_ids(&self, part: Part) -> Vec<u64> {
+        (self.start..=self.end)
+            .filter(|n| match part {
+                Part::One => invalid_part_1(*n),
+                Part::Two => invalid_part_2(*n),
+            })
+            .collect()
     }
 }
 
@@ -80,7 +105,7 @@ impl Display for Range {
 
 #[cfg(test)]
 mod tests {
-    use crate::is_invalid_id;
+    use crate::{has_repeating_prefix, invalid_part_1, invalid_part_2};
 
     #[test]
     fn test_invalid_id() {
@@ -94,9 +119,38 @@ mod tests {
             (333, true),
             (3333, false),
             (3434, false),
-            (3435, true)
+            (3435, true),
         ] {
-            assert!(is_invalid_id(id_num) != valid);
+            assert!(invalid_part_1(id_num) != valid);
+        }
+    }
+
+    #[test]
+    fn test_invalid_2() {
+        for (s, outcome) in [
+            (12, false),
+            (11, true),
+            (111, true),
+            (12121, false),
+            (121212, true),
+            (12312, false),
+            (123124, false),
+            (123123, true),
+            (123123123, true),
+            (123123124, false),
+            (123223123, false),
+            (123123223, false),
+        ] {
+            assert!(invalid_part_2(s) == outcome);
+        }
+    }
+
+    #[test]
+    fn test_repeating_prefix() {
+        for (s, p, outcome) in [
+            ("11", 1, true)
+        ] {
+            assert_eq!(has_repeating_prefix(s, p), outcome);
         }
     }
 }
