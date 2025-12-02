@@ -74,7 +74,7 @@ pub fn all_lines(filename: &str) -> io::Result<impl Iterator<Item = String>> {
 
 pub fn log_floor<N: Integer + Copy + DivAssign + AddAssign>(mut num: N, base: N) -> N {
     let mut result = N::zero();
-    while num > N::one() {
+    while num >= base {
         num /= base;
         result += N::one();
     }
@@ -163,7 +163,7 @@ mod tests {
     }
 
     #[test]
-    fn test_log_floor() {
+    fn test_log_2_floor() {
         for (n, l) in [
             (1, 0),
             (2, 1),
@@ -175,6 +175,22 @@ mod tests {
             (8, 3),
         ] {
             assert_eq!(log_floor(n, 2), l);
+        }
+    }
+
+    #[test]
+    fn test_log_10_floor() {
+        for (n, l) in [
+            (1, 0),
+            (9, 0),
+            (10, 1),
+            (99, 1),
+            (100, 2),
+            (999, 2),
+            (1000, 3),
+            (9999, 3)
+        ] {
+            assert_eq!(log_floor(n, 10), l);
         }
     }
 }
