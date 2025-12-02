@@ -39,12 +39,7 @@ fn invalid_part_1(id_num: u64) -> bool {
 
 fn invalid_part_2(id_num: u64) -> bool {
     let id_str = format!("{id_num}");
-    for prefix_size in 1..=id_str.len() / 2 {
-        if has_repeating_prefix(id_str.as_str(), prefix_size) {
-            return true;
-        }
-    }
-    false
+    (1..=id_str.len() / 2).any(|prefix_size| has_repeating_prefix(id_str.as_str(), prefix_size))
 }
 
 fn has_repeating_prefix(s: &str, prefix_size: usize) -> bool {
@@ -53,12 +48,9 @@ fn has_repeating_prefix(s: &str, prefix_size: usize) -> bool {
     }
     let prefix = &s[..prefix_size];
     let rest = &s[prefix_size..];
-    for start in (0..rest.len()).step_by(prefix.len()) {
-        if prefix != &rest[start..start + prefix.len()] {
-            return false;
-        }
-    }
-    true
+    (0..rest.len())
+        .step_by(prefix.len())
+        .all(|start| prefix == &rest[start..start + prefix.len()])
 }
 
 #[derive(Debug, Copy, Clone)]
