@@ -43,7 +43,7 @@ fn invalid_part_2(id_num: u64) -> bool {
         if has_repeating_prefix(id_str.as_str(), prefix_size) {
             return true;
         }
-    }   
+    }
     false
 }
 
@@ -147,9 +147,7 @@ mod tests {
 
     #[test]
     fn test_repeating_prefix() {
-        for (s, p, outcome) in [
-            ("11", 1, true)
-        ] {
+        for (s, p, outcome) in [("11", 1, true)] {
             assert_eq!(has_repeating_prefix(s, p), outcome);
         }
     }
