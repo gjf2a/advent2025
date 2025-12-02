@@ -22,16 +22,16 @@ fn main() -> anyhow::Result<()> {
 fn invalid_part_1(id_num: u64) -> bool {
     let num_digits = log_floor(id_num, 10) + 1;
     if num_digits % 2 == 0 {
-        let mut id_num = id_num;
+        let mut upper_half = id_num;
         let mut multiplier = 1;
         let mut lower_half = 0;
         for _ in 0..num_digits / 2 {
-            let digit = id_num % 10;
-            id_num /= 10;
+            let digit = upper_half % 10;
+            upper_half /= 10;
             lower_half += digit * multiplier;
             multiplier *= 10;
         }
-        lower_half == id_num
+        lower_half == upper_half
     } else {
         false
     }
