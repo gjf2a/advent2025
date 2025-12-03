@@ -1,7 +1,6 @@
 use std::{cmp::max, collections::HashMap};
 
 use advent2025::{Part, advent_main, all_lines};
-use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
     advent_main(|filename, part, _| {
@@ -11,17 +10,21 @@ fn main() -> anyhow::Result<()> {
         };
         let v = all_lines(filename)?
             .map(|line| {
-                let nums = line
-                    .chars()
-                    .map(|c| c.to_digit(10).unwrap() as u64)
-                    .collect_vec();
                 let mut table = MemoizedLineJoltage::default();
-                table.line_joltage(&nums, num_digits).unwrap()
+                table
+                    .line_joltage(&str2nums(line.as_str()), num_digits)
+                    .unwrap()
             })
             .sum::<u64>();
         println!("{v}");
         Ok(())
     })
+}
+
+fn str2nums(line: &str) -> Vec<u64> {
+    line.chars()
+        .map(|c| c.to_digit(10).unwrap() as u64)
+        .collect()
 }
 
 #[derive(Default)]
