@@ -11,9 +11,7 @@ fn main() -> anyhow::Result<()> {
         let v = all_lines(filename)?
             .map(|line| {
                 let mut table = MemoizedLineJoltage::default();
-                table
-                    .line_joltage(&str2nums(line.as_str()), num_digits)
-                    .unwrap()
+                table.line_joltage(&str2nums(line.as_str()), num_digits)
             })
             .sum::<u64>();
         println!("{v}");
@@ -33,8 +31,8 @@ struct MemoizedLineJoltage {
 }
 
 impl MemoizedLineJoltage {
-    fn line_joltage(&mut self, nums: &Vec<u64>, digits: usize) -> Option<u64> {
-        self.line_joltage_recursive(nums, 0, digits)
+    fn line_joltage(&mut self, nums: &Vec<u64>, digits: usize) -> u64 {
+        self.line_joltage_recursive(nums, 0, digits).unwrap()
     }
 
     fn line_joltage_recursive(
