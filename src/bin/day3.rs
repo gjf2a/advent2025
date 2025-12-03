@@ -1,20 +1,95 @@
+use std::{cmp::max, collections::HashMap};
+
 use advent2025::{Part, advent_main, all_lines};
 use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
-    advent_main(|filename, part, _| match part {
-        Part::One => {
-            let v = all_lines(filename)?.map(|line| line_voltage(line.as_str())).sum::<u32>();
-            println!("{v}");
-            Ok(())
-        }
-        Part::Two => {
-            todo!("No part 2 yet")
-        }
+    advent_main(|filename, part, _| {
+        let num_digits = match part {
+            Part::One => 2,
+            Part::Two => 12,
+        };
+        let v = all_lines(filename)?
+            .map(|line| {
+                let nums = line
+                    .chars()
+                    .map(|c| c.to_digit(10).unwrap() as u64)
+                    .collect_vec();
+                let mut table = MemoizedLineJoltage::default();
+                table.line_joltage(&nums, num_digits).unwrap()
+            })
+            .sum::<u64>();
+        println!("{v}");
+        Ok(())
     })
 }
 
-fn line_voltage(nums: &str) -> u32 {
+#[derive(Default)]
+struct MemoizedLineJoltage {
+    table: HashMap<(usize, usize), u64>,
+}
+
+impl MemoizedLineJoltage {
+    fn line_joltage(&mut self, nums: &Vec<u64>, digits: usize) -> Option<u64> {
+        self.line_joltage_recursive(nums, 0, digits)
+    }
+
+    fn line_joltage_recursive(
+        &mut self,
+        nums: &Vec<u64>,
+        start: usize,
+        digits: usize,
+    ) -> Option<u64> {
+        if self.table.get(&(start, digits)).is_none() {
+            let space = nums.len() - start;
+            if digits == 0 {
+                self.table.insert((start, digits), 0);
+            } else if space >= digits {
+                let with = self
+                    .line_joltage_recursive(nums, start + 1, digits - 1)
+                    .map(|r| r + nums[start] * 10_u64.pow(digits as u32 - 1));
+                let without = self.line_joltage_recursive(nums, start + 1, digits);
+                match (with, without) {
+                    (Some(with), Some(without)) => {
+                        self.table.insert((start, digits), max(with, without));
+                    }
+                    (Some(with), None) => {
+                        self.table.insert((start, digits), with);
+                    }
+                    (None, Some(without)) => {
+                        self.table.insert((start, digits), without);
+                    }
+                    _ => {}
+                }
+            }
+        }
+        self.table.get(&(start, digits)).copied()
+    }
+}
+
+fn line_joltage_recursive(nums: &Vec<u64>, start: usize, digits: usize) -> Option<u64> {
+    let space = nums.len() - start;
+    if digits == 0 {
+        Some(0)
+    } else if space < digits {
+        None
+    } else {
+        let with = line_joltage_recursive(nums, start + 1, digits - 1)
+            .map(|r| r + nums[start] * 10_u64.pow(digits as u32 - 1));
+        let without = line_joltage_recursive(nums, start + 1, digits);
+        if let Some(with) = with {
+            Some(if let Some(without) = without {
+                max(with, without)
+            } else {
+                with
+            })
+        } else {
+            without
+        }
+    }
+}
+
+fn line_joltage(nums: &str) -> u32 {
     let mut best = 0;
     let nums = nums.chars().map(|c| c.to_digit(10).unwrap()).collect_vec();
     for i in 0..nums.len() {
