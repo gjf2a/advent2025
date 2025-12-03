@@ -41,10 +41,9 @@ impl MemoizedLineJoltage {
         digits: usize,
     ) -> Option<u64> {
         if self.table.get(&(start, digits)).is_none() {
-            let space = nums.len() - start;
             if digits == 0 {
                 self.table.insert((start, digits), 0);
-            } else if space >= digits {
+            } else if nums.len() >= digits + start {
                 let with = self
                     .line_joltage_recursive(nums, start + 1, digits - 1)
                     .map(|r| r + nums[start] * 10_u64.pow(digits as u32 - 1));
@@ -68,10 +67,9 @@ impl MemoizedLineJoltage {
 }
 
 fn line_joltage_recursive(nums: &Vec<u64>, start: usize, digits: usize) -> Option<u64> {
-    let space = nums.len() - start;
     if digits == 0 {
         Some(0)
-    } else if space < digits {
+    } else if nums.len() < digits + start {
         None
     } else {
         let with = line_joltage_recursive(nums, start + 1, digits - 1)
@@ -89,9 +87,8 @@ fn line_joltage_recursive(nums: &Vec<u64>, start: usize, digits: usize) -> Optio
     }
 }
 
-fn line_joltage(nums: &str) -> u32 {
+fn line_joltage(nums: &Vec<u64>) -> u64 {
     let mut best = 0;
-    let nums = nums.chars().map(|c| c.to_digit(10).unwrap()).collect_vec();
     for i in 0..nums.len() {
         for j in i + 1..nums.len() {
             let value = nums[i] * 10 + nums[j];
