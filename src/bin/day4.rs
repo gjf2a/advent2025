@@ -4,6 +4,7 @@ use advent2025::{
     multidim::{Dir, DirType, Position},
 };
 use enum_iterator::all;
+use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
     advent_main(|filename, part, _| {
@@ -11,7 +12,20 @@ fn main() -> anyhow::Result<()> {
         match part {
             Part::One => println!("{}", removable_rolls(&world).count()),
             Part::Two => {
-                todo!()
+                let mut world = world;
+                let mut removed = 0;
+                loop {
+                    let removable = removable_rolls(&world).collect_vec();
+                    if removable.len() == 0 {
+                        break;
+                    } else {
+                        for p in removable {
+                            world.update(p, '.');
+                            removed += 1;
+                        }
+                    }
+                }
+                println!("{removed}");
             }
         }
         Ok(())
