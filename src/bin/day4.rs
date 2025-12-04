@@ -8,26 +8,12 @@ use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
     advent_main(|filename, part, _| {
-        let world = GridCharWorld::from_char_file(filename)?;
-        match part {
-            Part::One => println!("{}", removable_rolls(&world).count()),
-            Part::Two => {
-                let mut world = world;
-                let mut removed = 0;
-                loop {
-                    let removable = removable_rolls(&world).collect_vec();
-                    if removable.len() == 0 {
-                        break;
-                    } else {
-                        for p in removable {
-                            world.update(p, '.');
-                            removed += 1;
-                        }
-                    }
-                }
-                println!("{removed}");
-            }
-        }
+        let mut world = GridCharWorld::from_char_file(filename)?;
+        let result = match part {
+            Part::One => removable_rolls(&world).count(),
+            Part::Two => num_rolls_removed(&mut world),
+        };
+        println!("{result}");
         Ok(())
     })
 }
@@ -44,4 +30,19 @@ fn is_removable(p: &Position, world: &GridCharWorld) -> bool {
         .filter(|d| world.value(d.neighbor(*p)).map_or(false, |n| n == '@'))
         .count()
         < 4
+}
+
+fn num_rolls_removed(world: &mut GridCharWorld) -> usize {
+    let mut removed = 0;
+    loop {
+        let removable = removable_rolls(&world).collect_vec();
+        if removable.len() == 0 {
+            return removed;
+        } else {
+            for p in removable {
+                world.update(p, '.');
+                removed += 1;
+            }
+        }
+    }
 }
