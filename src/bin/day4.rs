@@ -34,21 +34,6 @@ fn is_removable(p: &Position, world: &GridCharWorld) -> bool {
 
 fn num_rolls_removed(world: &mut GridCharWorld) -> usize {
     let mut removed = 0;
-    let mut current_count = removable_rolls(world).count();
-    loop {
-        let mut updated = world.map(|p, v| if is_removable(p, world) {'.'} else {'@'});
-        let updated_count = removable_rolls(&updated).count();
-
-        if updated_count == current_count {
-            return removed;
-        } else {
-            removed += current_count - updated_count;
-            std::mem::swap(&mut updated, world);
-            current_count = updated_count;
-        }
-    }
-    /*
-    let mut removed = 0;
     loop {
         let removable = removable_rolls(&world).collect_vec();
         if removable.len() == 0 {
@@ -59,5 +44,5 @@ fn num_rolls_removed(world: &mut GridCharWorld) -> usize {
                 removed += 1;
             }
         }
-    }*/
+    }
 }
