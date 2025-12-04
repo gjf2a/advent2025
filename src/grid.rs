@@ -85,6 +85,13 @@ impl<V: Copy + Clone + Eq + PartialEq> GridWorld<V> {
         Self { map, width, height }
     }
 
+    pub fn map<F:Fn(&Position,&V) -> V>(&self, mapper: F) -> Self {
+        Self {
+            map: self.map.iter().map(|(p, v)| (*p, mapper(p, v))).collect(),
+            width: self.width, height: self.height,
+        }
+    }
+
     pub fn at_edge(&self, p: Position) -> bool {
         p[0] == 0
             || p[1] == 0
