@@ -30,7 +30,7 @@ impl CharDisplay for char {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct GridWorld<V> {
-    map: BTreeMap<Position, V>,
+    map: Vec<Vec<V>>,
     width: usize,
     height: usize,
 }
@@ -47,8 +47,17 @@ impl GridCharWorld {
     }
 }
 
-fn convert<V: Clone>(map: &HashMap<Position, V>) -> BTreeMap<Position, V> {
-    map.iter().map(|(k, v)| (*k, v.clone())).collect()
+fn convert<V: Clone>(map: &HashMap<Position, V>, width: usize, height: usize) -> Vec<Vec<V>> {
+    let mut result = vec![];
+    for x in 0..(width as isize) {
+        let mut column = vec![];
+        for y in 0..(height as isize) {
+            let coord = Position::new([x, y]);
+            column.push(map.get(&coord).cloned().unwrap());
+        }
+        result.push(column);
+    }
+    result
 }
 
 impl FromStr for GridCharWorld {
@@ -62,7 +71,7 @@ impl FromStr for GridCharWorld {
             }
         }
         let (width, height) = map_width_height(&map);
-        let map = convert(&map);
+        let map = convert(&map, width, height);
         Ok(Self { map, width, height })
     }
 }
@@ -71,24 +80,35 @@ impl<V: Copy + Clone + Eq + PartialEq> GridWorld<V> {
     pub fn from_file<F: Fn(char) -> V>(filename: &str, reader: F) -> anyhow::Result<Self> {
         let map = to_map(filename, reader)?;
         let (width, height) = map_width_height(&map);
-        let map = convert(&map);
+        let map = convert(&map, width, height);
         Ok(Self { map, width, height })
     }
 
     pub fn new(width: usize, height: usize, fill_value: V) -> Self {
-        let mut map = BTreeMap::new();
-        for i in 0..(width as isize) {
-            for j in 0..(height as isize) {
-                map.insert(Position::from((i, j)), fill_value);
+        let mut map = vec![];
+        for _ in 0..(width as isize) {
+            let mut column = vec![];
+            for _ in 0..(height as isize) {
+                column.push(fill_value);
             }
+            map.push(column);
         }
         Self { map, width, height }
     }
 
-    pub fn map<F:Fn(&Position,&V) -> V>(&self, mapper: F) -> Self {
+    pub fn map<F: Fn(Position, &V) -> V>(&self, mapper: F) -> Self {
         Self {
-            map: self.map.iter().map(|(p, v)| (*p, mapper(p, v))).collect(),
-            width: self.width, height: self.height,
+            map: (0..self.width)
+                .map(|x| {
+                    self.map[x]
+                        .iter()
+                        .enumerate()
+                        .map(|(y, v)| mapper(Position::from((x as isize, y as isize)), v))
+                        .collect()
+                })
+                .collect(),
+            width: self.width,
+            height: self.height,
         }
     }
 
@@ -100,7 +120,7 @@ impl<V: Copy + Clone + Eq + PartialEq> GridWorld<V> {
     }
 
     pub fn in_bounds(&self, p: Position) -> bool {
-        self.map.contains_key(&p)
+        p[0] >= 0 && p[0] < self.width as isize && p[1] >= 0 && p[1] < self.height as isize
     }
 
     pub fn width(&self) -> usize {
@@ -112,7 +132,9 @@ impl<V: Copy + Clone + Eq + PartialEq> GridWorld<V> {
     }
 
     pub fn value(&self, p: Position) -> Option<V> {
-        self.map.get(&p).copied()
+        self.map
+            .get(p[0] as usize)
+            .and_then(|c| c.get(p[1] as usize).copied())
     }
 
     pub fn values_from<D: DirType>(&self, p: Position, dir: D, num_values: usize) -> Vec<V> {
@@ -129,21 +151,17 @@ impl<V: Copy + Clone + Eq + PartialEq> GridWorld<V> {
     }
 
     pub fn update(&mut self, p: Position, value: V) {
-        if let Some(current) = self.map.get_mut(&p) {
-            *current = value;
+        if self.in_bounds(p) {
+            self.map[p[0] as usize][p[1] as usize] = value;
         }
     }
 
-    pub fn modify<M: FnMut(&mut V)>(&mut self, p: Position, mut modifier: M) {
-        self.map.get_mut(&p).map(|v| modifier(v));
-    }
-
     pub fn swap(&mut self, p1: Position, p2: Position) {
-        if p1 != p2 && self.map.contains_key(&p1) && self.map.contains_key(&p2) {
-            let p1val = self.map.remove(&p1).unwrap();
-            let p2val = self.map.remove(&p2).unwrap();
-            self.map.insert(p1, p2val);
-            self.map.insert(p2, p1val);
+        if let Some(v1) = self.value(p1) {
+            if let Some(v2) = self.value(p2) {
+                self.update(p1, v2);
+                self.update(p2, v1);
+            }
         }
     }
 
@@ -151,17 +169,13 @@ impl<V: Copy + Clone + Eq + PartialEq> GridWorld<V> {
         RowMajorPositionIterator::new(self.width, self.height)
     }
 
-    pub fn position_value_iter(&self) -> impl Iterator<Item = (&Position, &V)> {
-        self.map.iter()
-    }
-
-    pub fn position_value_iter_mut(&mut self) -> impl Iterator<Item = (&Position, &mut V)> {
-        self.map.iter_mut()
+    pub fn position_value_iter(&self) -> impl Iterator<Item = (Position, V)> {
+        RowMajorPositionIterator::new(self.width, self.height).map(|p| (p, self.value(p).unwrap()))
     }
 
     pub fn ring_iter(&self) -> RingIterator {
         RingIterator::new(
-            self.map.keys().min().copied().unwrap(),
+            Position::new([0, 0]),
             self.width as isize,
             self.height as isize,
         )
