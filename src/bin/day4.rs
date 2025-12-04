@@ -21,12 +21,13 @@ fn main() -> anyhow::Result<()> {
 fn removable_rolls(world: &GridCharWorld) -> impl Iterator<Item = Position> {
     world
         .position_value_iter()
-        .filter(|(p, v)| {
-            **v == '@'
-                && all::<Dir>()
-                    .filter(|d| world.value(d.neighbor(**p)).map_or(false, |n| n == '@'))
-                    .count()
-                    < 4
-        })
-        .map(|(p, v)| *p)
+        .filter(|(p, v)| **v == '@' && is_removable(*p, world))
+        .map(|(p, _)| *p)
+}
+
+fn is_removable(p: &Position, world: &GridCharWorld) -> bool {
+    all::<Dir>()
+        .filter(|d| world.value(d.neighbor(*p)).map_or(false, |n| n == '@'))
+        .count()
+        < 4
 }
