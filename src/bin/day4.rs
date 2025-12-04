@@ -1,24 +1,32 @@
 use advent2025::{
     Part, advent_main,
     grid::GridCharWorld,
-    multidim::{Dir, DirType},
+    multidim::{Dir, DirType, Position},
 };
 use enum_iterator::all;
 
 fn main() -> anyhow::Result<()> {
     advent_main(|filename, part, _| {
         let world = GridCharWorld::from_char_file(filename)?;
-        let part1 = world
-            .position_value_iter()
-            .filter(|(p, v)| {
-                **v == '@'
-                    && all::<Dir>()
-                        .filter(|d| world.value(d.neighbor(**p)).map_or(false, |n| n == '@'))
-                        .count()
-                        < 4
-            })
-            .count();
-        println!("{part1}");
+        match part {
+            Part::One => println!("{}", removable_rolls(&world).count()),
+            Part::Two => {
+                todo!()
+            }
+        }
         Ok(())
     })
+}
+
+fn removable_rolls(world: &GridCharWorld) -> impl Iterator<Item = Position> {
+    world
+        .position_value_iter()
+        .filter(|(p, v)| {
+            **v == '@'
+                && all::<Dir>()
+                    .filter(|d| world.value(d.neighbor(**p)).map_or(false, |n| n == '@'))
+                    .count()
+                    < 4
+        })
+        .map(|(p, v)| *p)
 }
