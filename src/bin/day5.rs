@@ -5,7 +5,7 @@ use anyhow::bail;
 use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
-    advent_main(|filename, part, _| {
+    advent_main(|filename, part, options| {
         let mut lines = all_lines(filename)?;
         let ranges = InclusiveRange::from(lines.by_ref());
         match part {
@@ -21,7 +21,7 @@ fn main() -> anyhow::Result<()> {
                 let mut nonoverlapping = vec![];
                 for i in 0..ranges.len() - 1 {
                     let mut candidates = vec![ranges[i]];
-                    for j in i+1..ranges.len() {
+                    for j in i + 1..ranges.len() {
                         let mut new_candidates = vec![];
                         for c in 0..candidates.len() {
                             for isplit in candidates[c].without_overlap(&ranges[j]) {
@@ -35,10 +35,13 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
                 nonoverlapping.push(ranges[ranges.len() - 1]);
-                for n in nonoverlapping {
-                    println!("{n}");
+                if options.contains(&"-view") {
+                    for n in nonoverlapping.iter() {
+                        println!("{n}");
+                    }
                 }
-                todo!("No part 2 yet")
+                let v = nonoverlapping.iter().map(|r| r.span()).sum::<u64>();
+                println!("{v}");
             }
         }
         Ok(())
@@ -64,7 +67,10 @@ impl InclusiveRange {
     }
 
     fn without_overlap(&self, other: &Self) -> Vec<Self> {
-        let second = Self {start: other.end + 1, end: self.end};
+        let second = Self {
+            start: other.end + 1,
+            end: self.end,
+        };
         if other.start <= self.start {
             if other.end < self.start {
                 vec![*self]
@@ -74,7 +80,10 @@ impl InclusiveRange {
                 vec![second]
             }
         } else {
-            let first = Self {start: self.start, end: other.start - 1};
+            let first = Self {
+                start: self.start,
+                end: other.start - 1,
+            };
             if self.end < other.start {
                 vec![*self]
             } else if other.end >= self.end {
