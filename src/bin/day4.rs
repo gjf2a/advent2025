@@ -7,11 +7,17 @@ use enum_iterator::all;
 use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
-    advent_main(|filename, part, _| {
+    advent_main(|filename, part, options| {
         let mut world = GridCharWorld::from_char_file(filename)?;
         let result = match part {
             Part::One => removable_rolls(&world).count(),
-            Part::Two => num_rolls_removed(&mut world),
+            Part::Two => {
+                if options.contains(&"-map") {
+                    num_rolls_removed_map(&mut world)
+                } else {
+                    num_rolls_removed(&mut world)
+                }
+            }
         };
         println!("{result}");
         Ok(())
@@ -21,8 +27,8 @@ fn main() -> anyhow::Result<()> {
 fn removable_rolls(world: &GridCharWorld) -> impl Iterator<Item = Position> {
     world
         .position_value_iter()
-        .filter(|(p, v)| **v == '@' && is_removable(*p, world))
-        .map(|(p, _)| *p)
+        .filter(|(p, v)| *v == '@' && is_removable(p, world))
+        .map(|(p, _)| p)
 }
 
 fn is_removable(p: &Position, world: &GridCharWorld) -> bool {
@@ -43,6 +49,29 @@ fn num_rolls_removed(world: &mut GridCharWorld) -> usize {
                 world.update(p, '.');
                 removed += 1;
             }
+        }
+    }
+}
+
+fn roll_count(world: &GridCharWorld) -> usize {
+    world
+        .position_value_iter()
+        .filter(|(_, v)| *v == '@')
+        .count()
+}
+
+fn num_rolls_removed_map(world: &mut GridCharWorld) -> usize {
+    let mut removed = 0;
+    let mut current_rolls = roll_count(world);
+    loop {
+        let mut updated = world.map(|p, v| if is_removable(&p, world) { '.' } else { *v });
+        let updated_rolls = roll_count(&updated);
+        if current_rolls == updated_rolls {
+            return removed;
+        } else {
+            removed += current_rolls - updated_rolls;
+            std::mem::swap(&mut updated, world);
+            current_rolls = updated_rolls;
         }
     }
 }
