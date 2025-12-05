@@ -3,18 +3,30 @@ use std::{cmp::max, collections::HashMap};
 use advent2025::{Part, advent_main, all_lines};
 
 fn main() -> anyhow::Result<()> {
-    advent_main(|filename, part, _| {
-        let num_digits = match part {
-            Part::One => 2,
-            Part::Two => 12,
-        };
-        let v = all_lines(filename)?
-            .map(|line| {
-                let mut table = MemoizedLineJoltage::default();
-                table.line_joltage(&str2nums(line.as_str()), num_digits)
-            })
-            .sum::<u64>();
-        println!("{v}");
+    advent_main(|filename, part, options| {
+        if options.contains(&"-original") && part == Part::One {
+            let v = all_lines(filename)?
+                .map(|line| line_joltage(&str2nums(line.as_str())))
+                .sum::<u64>();
+            println!("{v}");
+        } else if options.contains(&"-recursive") && part == Part::One {
+            let v = all_lines(filename)?
+                .map(|line| line_joltage_recursive(&str2nums(line.as_str()), 0, 2).unwrap())
+                .sum::<u64>();
+            println!("{v}");
+        } else {
+            let num_digits = match part {
+                Part::One => 2,
+                Part::Two => 12,
+            };
+            let v = all_lines(filename)?
+                .map(|line| {
+                    let mut table = MemoizedLineJoltage::default();
+                    table.line_joltage(&str2nums(line.as_str()), num_digits)
+                })
+                .sum::<u64>();
+            println!("{v}");
+        }
         Ok(())
     })
 }
