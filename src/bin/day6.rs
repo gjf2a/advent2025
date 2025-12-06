@@ -2,6 +2,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use advent2025::{Part, advent_main, all_lines, grid::GridWorld, multidim::Position};
 use anyhow::bail;
+use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
     advent_main(|filename, part, _| {
@@ -73,26 +74,27 @@ fn to_map(filename: &str) -> anyhow::Result<(GridWorld<Option<u64>>, Vec<Op>)> {
 }
 
 fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<Option<u64>>, Vec<Op>)> {
+    let mut rows = all_lines(filename)?.collect_vec();
+    let op_row = rows.pop().unwrap();
     let mut nums = HashMap::new();
-    let mut ops = vec![];
-    for (y, row) in all_lines(filename)?.enumerate() {
-        let start = row.chars().next().unwrap();
-        if start == ' ' || start.is_digit(10) {
-            for (x, c) in row.char_indices() {
-                let p = Position::from((x as isize, y as isize));
-                let v = c.to_digit(10).map(|v| v as u64);
-                nums.insert(p, v);
-            }
-        } else {
-            let mut current_op = Op::Add;
-            for x in 0..row.len() {
-                if let Ok(op) = row[x..x+1].parse::<Op>() {
-                    current_op = op;
-                }
-                ops.push(current_op);
-            }
+    for (y, row) in rows.iter().enumerate() {
+        let multiplier = 10_u64.pow((rows.len() - y - 1) as u32);
+        for (x, c) in row.char_indices() {
+            let p = Position::from((x as isize, y as isize));
+            let v = c.to_digit(10).map(|v| v as u64 * multiplier);
+            nums.insert(p, v);
         }
     }
+
+    let mut ops = vec![];
+    let mut current_op = Op::Add;
+    for x in 0..op_row.len() {
+        if let Ok(op) = op_row[x..x+1].parse::<Op>() {
+            current_op = op;
+        }
+        ops.push(current_op);
+    }
+
     let world = GridWorld::from_map(&nums);
     assert_eq!(world.width(), ops.len());
     Ok((world, ops))
