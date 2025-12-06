@@ -1,6 +1,6 @@
-use std::{collections::HashMap, fmt::Display, str::FromStr};
+use std::{collections::{BTreeMap, HashMap}, fmt::Display, str::FromStr};
 
-use advent2025::{Part, advent_main, all_lines, grid::GridWorld, multidim::Position};
+use advent2025::{Part, advent_main, all_lines, grid::GridWorld, multidim::{Position, map_width_height}};
 use anyhow::bail;
 use itertools::Itertools;
 
@@ -34,6 +34,13 @@ impl Op {
             })
             .unwrap()
     }
+
+    fn identity(&self) -> u64 {
+        match self {
+            Op::Add => 0,
+            Op::Mul => 1,
+        }
+    }
 }
 
 impl FromStr for Op {
@@ -65,7 +72,7 @@ fn to_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
         for (x, entry) in row.split_whitespace().enumerate() {
             match entry.parse::<u64>() {
                 Ok(n) => {
-                    nums.insert(Position::from((x as isize, y as isize)), n);
+                    nums.insert(Position::from_usize(x, y), n);
                 }
                 Err(_) => {
                     ops.push(entry.parse::<Op>()?);
@@ -82,11 +89,10 @@ fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
     let mut rows = all_lines(filename)?.collect_vec();
     let op_row = rows.pop().unwrap();
     let op_starts_widths = op_starts_widths(op_row.as_str());
+    println!("{op_starts_widths:?}");
     let mut nums = HashMap::new();
-    for x in 0..op_starts_widths.len() {
-        let column_start = op_starts_widths[x].1;
-        let column_width = op_starts_widths[x].2;
-        for y in 0..column_width {
+    for (x, (_, column_start, column_width)) in op_starts_widths.iter().enumerate() {
+        for y in 0..*column_width {
             let mut total = 0;
             for digit in 0..rows.len() {
                 let digit_column = column_start + y;
@@ -95,13 +101,28 @@ fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
                     total = (total * 10) + column_value;
                 }
             }
-            let p = Position::from((x as isize, y as isize));
+            let p = Position::from_usize(x, y);
             nums.insert(p, total);
         }
     }
 
+    let (width, height) = map_width_height(&nums);
+    for x in 0..width {
+        let default = op_starts_widths[x].0.identity();
+        for y in 0..height {
+            let p = Position::from_usize(x, y);
+            if !nums.contains_key(&p) {
+                nums.insert(p, default);
+            }
+        }
+    }
+
     let world = GridWorld::from_map(&nums);
+    println!();
+    println!("{:?}", nums.iter().collect::<BTreeMap<_,_>>());
+    println!();
     println!("{world:?}");
+    println!("width, height: {:?}", map_width_height(&nums));
     assert_eq!(world.width(), op_starts_widths.len());
     Ok((world, op_starts_widths.iter().map(|(op,_,_)| *op).collect()))
 }
@@ -112,9 +133,8 @@ fn op_starts_widths(op_row: &str) -> Vec<(Op, usize, usize)> {
     for i in 0..op_indices.len() {
         let si = op_indices[i].0;
         let op = op_row[si..si+1].parse::<Op>().unwrap();
-        let next = if i + 1 < op_indices.len() { op_indices[i + 1].0} else {op_row.len()};
-        result.push((op, si, next - si));
-        println!("{:?}", result[result.len() - 1]);
+        let next = if i + 1 < op_indices.len() { op_indices[i + 1].0} else {op_row.len() + 1};
+        result.push((op, si, next - si - 1));
     }
     result
 }
