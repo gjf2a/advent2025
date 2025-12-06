@@ -591,7 +591,10 @@ pub fn to_map<V, F: Fn(char) -> V>(
     let mut result = HashMap::new();
     for (row, line) in all_lines(filename)?.enumerate() {
         for (col, value) in line.chars().enumerate() {
-            result.insert(Position::from_isize((col as isize, row as isize)), reader(value));
+            result.insert(
+                Position::from_isize((col as isize, row as isize)),
+                reader(value),
+            );
         }
     }
     Ok(result)

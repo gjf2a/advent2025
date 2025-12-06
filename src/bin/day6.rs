@@ -1,6 +1,14 @@
-use std::{collections::{BTreeMap, HashMap}, fmt::Display, str::FromStr};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fmt::Display,
+    str::FromStr,
+};
 
-use advent2025::{Part, advent_main, all_lines, grid::GridWorld, multidim::{Position, map_width_height}};
+use advent2025::{
+    Part, advent_main, all_lines,
+    grid::GridWorld,
+    multidim::{Position, map_width_height},
+};
 use anyhow::bail;
 use itertools::Itertools;
 
@@ -96,7 +104,10 @@ fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
             let mut total = 0;
             for digit in 0..rows.len() {
                 let digit_column = column_start + y;
-                let column_value = rows[digit][digit_column..digit_column + 1].parse::<u64>().map(|v| v).unwrap_or(0);
+                let column_value = rows[digit][digit_column..digit_column + 1]
+                    .parse::<u64>()
+                    .map(|v| v)
+                    .unwrap_or(0);
                 if column_value > 0 {
                     total = (total * 10) + column_value;
                 }
@@ -119,21 +130,31 @@ fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
 
     let world = GridWorld::from_map(&nums);
     println!();
-    println!("{:?}", nums.iter().collect::<BTreeMap<_,_>>());
+    println!("{:?}", nums.iter().collect::<BTreeMap<_, _>>());
     println!();
     println!("{world:?}");
     println!("width, height: {:?}", map_width_height(&nums));
     assert_eq!(world.width(), op_starts_widths.len());
-    Ok((world, op_starts_widths.iter().map(|(op,_,_)| *op).collect()))
+    Ok((
+        world,
+        op_starts_widths.iter().map(|(op, _, _)| *op).collect(),
+    ))
 }
 
 fn op_starts_widths(op_row: &str) -> Vec<(Op, usize, usize)> {
-    let op_indices = op_row.char_indices().filter(|(_,c)| *c != ' ').collect_vec();
+    let op_indices = op_row
+        .char_indices()
+        .filter(|(_, c)| *c != ' ')
+        .collect_vec();
     let mut result = vec![];
     for i in 0..op_indices.len() {
         let si = op_indices[i].0;
-        let op = op_row[si..si+1].parse::<Op>().unwrap();
-        let next = if i + 1 < op_indices.len() { op_indices[i + 1].0} else {op_row.len() + 1};
+        let op = op_row[si..si + 1].parse::<Op>().unwrap();
+        let next = if i + 1 < op_indices.len() {
+            op_indices[i + 1].0
+        } else {
+            op_row.len() + 1
+        };
         result.push((op, si, next - si - 1));
     }
     result
