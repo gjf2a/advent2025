@@ -11,6 +11,7 @@ fn main() -> anyhow::Result<()> {
         };
         let total = (0..world.width())
             .map(|x| ops[x].compute_column(&world, x))
+            .inspect(|c| println!("{c}"))
             .sum::<u64>();
         println!("{total}");
         Ok(())
@@ -24,9 +25,13 @@ enum Op {
 }
 
 impl Op {
-    fn compute_column(&self, world: &GridWorld<u64>, column: usize) -> u64 {
+    fn compute_column(&self, world: &GridWorld<Option<u64>>, column: usize) -> u64 {
+        let identity = match self {
+            Self::Add => 0,
+            Self::Mul => 1,
+        };
         (0..world.height())
-            .map(|y| world.get(column, y).unwrap())
+            .map(|y| world.get(column, y).unwrap().unwrap_or(identity))
             .reduce(|a, b| match self {
                 Self::Add => a + b,
                 Self::Mul => a * b,
@@ -47,14 +52,14 @@ impl FromStr for Op {
     }
 }
 
-fn to_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
+fn to_map(filename: &str) -> anyhow::Result<(GridWorld<Option<u64>>, Vec<Op>)> {
     let mut nums = HashMap::new();
     let mut ops = vec![];
     for (y, row) in all_lines(filename)?.enumerate() {
         for (x, entry) in row.split_whitespace().enumerate() {
             match entry.parse::<u64>() {
                 Ok(n) => {
-                    nums.insert(Position::from((x as isize, y as isize)), n);
+                    nums.insert(Position::from((x as isize, y as isize)), Some(n));
                 }
                 Err(_) => {
                     ops.push(entry.parse::<Op>()?);
@@ -67,7 +72,7 @@ fn to_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
     Ok((world, ops))
 }
 
-fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
+fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<Option<u64>>, Vec<Op>)> {
     let mut nums = HashMap::new();
     let mut ops = vec![];
     for (y, row) in all_lines(filename)?.enumerate() {
@@ -75,8 +80,8 @@ fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
         if start == ' ' || start.is_digit(10) {
             for (x, c) in row.char_indices() {
                 let p = Position::from((x as isize, y as isize));
-                let v = c.to_digit(10).unwrap_or(0);
-                nums.insert(p, v as u64);
+                let v = c.to_digit(10).map(|v| v as u64);
+                nums.insert(p, v);
             }
         } else {
             let mut current_op = Op::Add;
