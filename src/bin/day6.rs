@@ -12,7 +12,6 @@ fn main() -> anyhow::Result<()> {
         };
         let total = (0..world.width())
             .map(|x| ops[x].compute_column(&world, x))
-            .inspect(|c| println!("{c}"))
             .sum::<u64>();
         println!("{total}");
         Ok(())
@@ -82,11 +81,11 @@ fn to_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
 fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
     let mut rows = all_lines(filename)?.collect_vec();
     let op_row = rows.pop().unwrap();
-    let ops = op_row.split_whitespace().map(|s| s.parse::<Op>().unwrap()).collect_vec();
-    let column_width = (op_row.len() + 1) / ops.len();
+    let op_widths = op_widths(op_row.as_str());
     let mut nums = HashMap::new();
-    for x in 0..ops.len() {
-        for y in 0..(column_width - 1) {
+    for x in 0..op_widths.len() {
+        let column_width = op_widths[x].1;
+        for y in 0..column_width {
             let mut total = 0;
             for digit in 0..rows.len() {
                 let digit_column = x * column_width + y;
@@ -102,6 +101,19 @@ fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
 
     let world = GridWorld::from_map(&nums);
     println!("{world:?}");
-    assert_eq!(world.width(), ops.len());
-    Ok((world, ops))
+    assert_eq!(world.width(), op_widths.len());
+    Ok((world, op_widths.iter().map(|(op,_)| *op).collect()))
+}
+
+fn op_widths(op_row: &str) -> Vec<(Op, usize)> {
+    let op_indices = op_row.char_indices().filter(|(_,c)| *c != ' ').collect_vec();
+    let mut result = vec![];
+    for i in 0..op_indices.len() {
+        let si = op_indices[i].0;
+        let op = op_row[si..si+1].parse::<Op>().unwrap();
+        let next = if i + 1 < op_indices.len() { op_indices[i + 1].0} else {op_row.len()};
+        println!("{si} {next}");
+        result.push((op, next - si));
+    }
+    result
 }
