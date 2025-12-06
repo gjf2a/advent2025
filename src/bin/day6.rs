@@ -5,18 +5,14 @@ use anyhow::bail;
 
 fn main() -> anyhow::Result<()> {
     advent_main(|filename, part, _| {
-        let (world, ops) = to_map(filename)?;
-        match part {
-            Part::One => {
-                let total = (0..world.width())
-                    .map(|x| ops[x].compute_column(&world, x))
-                    .sum::<u64>();
-                println!("{total}");
-            }
-            Part::Two => {
-                todo!("No part 2 yet")
-            }
-        }
+        let (world, ops) = match part {
+            Part::One => to_map(filename)?,
+            Part::Two => to_wacky_map(filename)?,
+        };
+        let total = (0..world.width())
+            .map(|x| ops[x].compute_column(&world, x))
+            .sum::<u64>();
+        println!("{total}");
         Ok(())
     })
 }
@@ -63,6 +59,32 @@ fn to_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
                 Err(_) => {
                     ops.push(entry.parse::<Op>()?);
                 }
+            }
+        }
+    }
+    let world = GridWorld::from_map(&nums);
+    assert_eq!(world.width(), ops.len());
+    Ok((world, ops))
+}
+
+fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
+    let mut nums = HashMap::new();
+    let mut ops = vec![];
+    for (y, row) in all_lines(filename)?.enumerate() {
+        let start = row.chars().next().unwrap();
+        if start == ' ' || start.is_digit(10) {
+            for (x, c) in row.char_indices() {
+                let p = Position::from((x as isize, y as isize));
+                let v = c.to_digit(10).unwrap_or(0);
+                nums.insert(p, v as u64);
+            }
+        } else {
+            let mut current_op = Op::Add;
+            for x in 0..row.len() {
+                if let Ok(op) = row[x..x+1].parse::<Op>() {
+                    current_op = op;
+                }
+                ops.push(current_op);
             }
         }
     }
