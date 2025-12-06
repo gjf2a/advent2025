@@ -138,9 +138,7 @@ impl<V: Copy + Clone + Eq + PartialEq> GridWorld<V> {
     }
 
     pub fn value(&self, p: Position) -> Option<V> {
-        self.map
-            .get(p[0] as usize)
-            .and_then(|c| c.get(p[1] as usize).copied())
+        self.get(p[0] as usize, p[1] as usize)
     }
 
     pub fn values_from<D: DirType>(&self, p: Position, dir: D, num_values: usize) -> Vec<V> {
@@ -153,7 +151,7 @@ impl<V: Copy + Clone + Eq + PartialEq> GridWorld<V> {
     }
 
     pub fn get(&self, col: usize, row: usize) -> Option<V> {
-        self.value(Position::from((col as isize, row as isize)))
+        self.map.get(col).and_then(|c| c.get(row).copied())
     }
 
     pub fn update(&mut self, p: Position, value: V) {
