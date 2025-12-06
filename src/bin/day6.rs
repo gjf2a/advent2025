@@ -1,8 +1,4 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    fmt::Display,
-    str::FromStr,
-};
+use std::{collections::HashMap, str::FromStr};
 
 use advent2025::{
     Part, advent_main, all_lines,
@@ -63,16 +59,6 @@ impl FromStr for Op {
     }
 }
 
-impl Display for Op {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let sym = match self {
-            Self::Add => "+",
-            Self::Mul => "*",
-        };
-        write!(f, "{sym}")
-    }
-}
-
 fn to_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
     let mut nums = HashMap::new();
     let mut ops = vec![];
@@ -97,7 +83,6 @@ fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
     let mut rows = all_lines(filename)?.collect_vec();
     let op_row = rows.pop().unwrap();
     let op_starts_widths = op_starts_widths(op_row.as_str());
-    println!("{op_starts_widths:?}");
     let mut nums = HashMap::new();
     for (x, (_, column_start, column_width)) in op_starts_widths.iter().enumerate() {
         for y in 0..*column_width {
@@ -129,11 +114,6 @@ fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
     }
 
     let world = GridWorld::from_map(&nums);
-    println!();
-    println!("{:?}", nums.iter().collect::<BTreeMap<_, _>>());
-    println!();
-    println!("{world:?}");
-    println!("width, height: {:?}", map_width_height(&nums));
     assert_eq!(world.width(), op_starts_widths.len());
     Ok((
         world,
