@@ -84,6 +84,12 @@ impl<V: Copy + Clone + Eq + PartialEq> GridWorld<V> {
         Ok(Self { map, width, height })
     }
 
+    pub fn from_map(map: &HashMap<Position, V>) -> Self {
+        let (width, height) = map_width_height(&map);
+        let map = convert(&map, width, height);
+        Self { map, width, height }
+    }
+
     pub fn new(width: usize, height: usize, fill_value: V) -> Self {
         let mut map = vec![];
         for _ in 0..(width as isize) {
