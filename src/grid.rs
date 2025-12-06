@@ -47,13 +47,13 @@ impl GridCharWorld {
     }
 }
 
-fn convert<V: Clone + Copy>(map: &HashMap<Position, V>, width: usize, height: usize, default: Option<V>) -> Vec<Vec<V>> {
+fn convert<V: Clone>(map: &HashMap<Position, V>, width: usize, height: usize) -> Vec<Vec<V>> {
     let mut result = vec![];
     for x in 0..(width as isize) {
         let mut column = vec![];
         for y in 0..(height as isize) {
             let coord = Position::new([x, y]);
-            column.push(map.get(&coord).cloned().unwrap_or(default.unwrap().clone()));
+            column.push(map.get(&coord).cloned().unwrap());
         }
         result.push(column);
     }
@@ -71,7 +71,7 @@ impl FromStr for GridCharWorld {
             }
         }
         let (width, height) = map_width_height(&map);
-        let map = convert(&map, width, height, None);
+        let map = convert(&map, width, height);
         Ok(Self { map, width, height })
     }
 }
@@ -80,13 +80,13 @@ impl<V: Copy + Clone + Eq + PartialEq> GridWorld<V> {
     pub fn from_file<F: Fn(char) -> V>(filename: &str, reader: F) -> anyhow::Result<Self> {
         let map = to_map(filename, reader)?;
         let (width, height) = map_width_height(&map);
-        let map = convert(&map, width, height, None);
+        let map = convert(&map, width, height);
         Ok(Self { map, width, height })
     }
 
-    pub fn from_map(map: &HashMap<Position, V>, default: V) -> Self {
+    pub fn from_map(map: &HashMap<Position, V>) -> Self {
         let (width, height) = map_width_height(&map);
-        let map = convert(&map, width, height, Some(default));
+        let map = convert(&map, width, height);
         Self { map, width, height }
     }
 
