@@ -594,12 +594,11 @@ pub fn to_map<V, F: Fn(char) -> V>(
 }
 
 pub fn map_width_height<V>(map: &HashMap<Position, V>) -> (usize, usize) {
-    let max = map.keys().max().unwrap();
-    let min = map.keys().min().unwrap();
-    (
-        (max[0] - min[0] + 1) as usize,
-        (max[1] - min[1] + 1) as usize,
-    )
+    let max_x = map.keys().map(|k| k[0]).max().unwrap();
+    let max_y = map.keys().map(|k| k[1]).max().unwrap();
+    let min_x = map.keys().map(|k| k[0]).min().unwrap();
+    let min_y = map.keys().map(|k| k[1]).min().unwrap();
+    ((max_x - min_x + 1) as usize, (max_y - min_y + 1) as usize)
 }
 
 #[cfg(test)]
