@@ -30,8 +30,7 @@ enum Op {
 impl Op {
     fn compute_column(&self, world: &GridWorld<u64>, column: usize) -> u64 {
         (0..world.height())
-            .map(|y| Position::from((column as isize, y as isize)))
-            .map(|p| world.value(p).unwrap())
+            .map(|y| world.get(column, y).unwrap())
             .reduce(|a, b| match self {
                 Self::Add => a + b,
                 Self::Mul => a * b,
