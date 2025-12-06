@@ -22,8 +22,12 @@ pub struct Point<N: NumType + Default, const S: usize> {
 }
 
 impl Position {
-    pub fn from(pair: (isize, isize)) -> Self {
+    pub fn from_isize(pair: (isize, isize)) -> Self {
         Self::new([pair.0, pair.1])
+    }
+
+    pub fn from_usize(x: usize, y: usize) -> Self {
+        Self::from_isize((x as isize, y as isize))
     }
 
     pub fn next_in_grid(&self, width: usize, height: usize) -> Option<Position> {
@@ -345,7 +349,7 @@ pub enum ManhattanDir {
 
 impl DirType for ManhattanDir {
     fn offset(&self) -> Position {
-        Position::from(match self {
+        Position::from_isize(match self {
             ManhattanDir::N => (0, -1),
             ManhattanDir::E => (1, 0),
             ManhattanDir::S => (0, 1),
@@ -396,7 +400,7 @@ pub enum Dir {
 
 impl DirType for Dir {
     fn offset(&self) -> Position {
-        Position::from(match self {
+        Position::from_isize(match self {
             Dir::N => (0, -1),
             Dir::Ne => (1, -1),
             Dir::E => (1, 0),
@@ -513,7 +517,7 @@ impl RowMajorPositionIterator {
         RowMajorPositionIterator {
             width,
             height,
-            next: Some(Position::from((0, 0))),
+            next: Some(Position::from_usize(0, 0)),
         }
     }
 
@@ -549,7 +553,7 @@ impl RingIterator {
         Self {
             current: start,
             start: start,
-            end: Position::from((start[0] + width - 1, start[1] + height - 1)),
+            end: Position::from_isize((start[0] + width - 1, start[1] + height - 1)),
             direction: ManhattanDir::E,
             done: false,
         }
@@ -587,7 +591,7 @@ pub fn to_map<V, F: Fn(char) -> V>(
     let mut result = HashMap::new();
     for (row, line) in all_lines(filename)?.enumerate() {
         for (col, value) in line.chars().enumerate() {
-            result.insert(Position::from((col as isize, row as isize)), reader(value));
+            result.insert(Position::from_isize((col as isize, row as isize)), reader(value));
         }
     }
     Ok(result)
@@ -608,7 +612,7 @@ mod tests {
 
     #[test]
     fn test_point_math() {
-        let mut p1 = Position::from((2, 3));
+        let mut p1 = Position::from_isize((2, 3));
         assert_eq!(p1, Position::default() + p1);
         let p2 = p1;
         p1 += p1;
@@ -618,16 +622,16 @@ mod tests {
 
         let p3 = p2 * 4;
         let p4 = p3 % 3;
-        assert_eq!(p4, Position::from((2, 0)));
-        let p4 = p3 % Position::from((5, 7));
-        assert_eq!(p4, Position::from((3, 5)));
+        assert_eq!(p4, Position::from_isize((2, 0)));
+        let p4 = p3 % Position::from_isize((5, 7));
+        assert_eq!(p4, Position::from_isize((3, 5)));
 
-        let p5 = p4 - Position::from((5, 12));
-        assert_eq!(p5, Position::from((-2, -7)));
+        let p5 = p4 - Position::from_isize((5, 12));
+        assert_eq!(p5, Position::from_isize((-2, -7)));
         let p6 = p5 % 10;
-        assert_eq!(p6, Position::from((8, 3)));
-        let p7 = p5 % Position::from((10, 4));
-        assert_eq!(p7, Position::from((8, 1)));
+        assert_eq!(p6, Position::from_isize((8, 3)));
+        let p7 = p5 % Position::from_isize((10, 4));
+        assert_eq!(p7, Position::from_isize((8, 1)));
     }
 
     #[test]

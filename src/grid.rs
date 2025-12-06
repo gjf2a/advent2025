@@ -67,7 +67,7 @@ impl FromStr for GridCharWorld {
         let mut map = HashMap::new();
         for (row, line) in s.lines().enumerate() {
             for (col, value) in line.char_indices() {
-                map.insert(Position::from((col as isize, row as isize)), value);
+                map.insert(Position::from_isize((col as isize, row as isize)), value);
             }
         }
         let (width, height) = map_width_height(&map);
@@ -109,7 +109,7 @@ impl<V: Copy + Clone + Eq + PartialEq> GridWorld<V> {
                     self.map[x]
                         .iter()
                         .enumerate()
-                        .map(|(y, v)| mapper(Position::from((x as isize, y as isize)), v))
+                        .map(|(y, v)| mapper(Position::from_isize((x as isize, y as isize)), v))
                         .collect()
                 })
                 .collect(),
@@ -240,16 +240,16 @@ impl<V: Copy + Clone + Debug + Default + Display> InfiniteGrid<V> {
     }
 
     pub fn get(&self, x: isize, y: isize) -> V {
-        self.get_pos(Position::from((x, y)))
+        self.get_pos(Position::from_isize((x, y)))
     }
 
     pub fn add(&mut self, x: isize, y: isize, value: V) {
-        self.add_pos(Position::from((x, y)), value)
+        self.add_pos(Position::from_isize((x, y)), value)
     }
 
     pub fn move_square(&mut self, start: (isize, isize), movement: (isize, isize)) {
-        let start = Position::from(start);
-        let offset = Position::from(movement);
+        let start = Position::from_isize(start);
+        let offset = Position::from_isize(movement);
         let value = self.map.remove(&start).unwrap_or_default();
         self.add_pos(start + offset, value);
     }

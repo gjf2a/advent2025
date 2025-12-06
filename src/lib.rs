@@ -107,7 +107,7 @@ mod tests {
         );
 
         let neighbors = all::<Dir>()
-            .map(|d| d.neighbor(Position::from((4, 4))))
+            .map(|d| d.neighbor(Position::from_isize((4, 4))))
             .map(|p| (p[0], p[1]))
             .collect::<Vec<(isize, isize)>>();
         let targets = vec![
@@ -122,17 +122,17 @@ mod tests {
         ];
         assert_eq!(neighbors, targets);
 
-        let mut p = Position::from((3, 2));
+        let mut p = Position::from_isize((3, 2));
         p = Dir::Nw.neighbor(p);
-        assert_eq!(p, Position::from((2, 1)));
+        assert_eq!(p, Position::from_isize((2, 1)));
         p = Dir::Se.neighbor(p);
-        assert_eq!(p, Position::from((3, 2)));
-        assert_eq!(Dir::Ne.neighbor(p), Position::from((4, 1)));
+        assert_eq!(p, Position::from_isize((3, 2)));
+        assert_eq!(Dir::Ne.neighbor(p), Position::from_isize((4, 1)));
 
         let ps: Vec<Position> = RowMajorPositionIterator::new(2, 3).collect();
         let targets = [(0, 0), (1, 0), (0, 1), (1, 1), (0, 2), (1, 2)];
         assert_eq!(ps.len(), targets.len());
-        assert!((0..targets.len()).all(|i| Position::from(targets[i]) == ps[i]));
+        assert!((0..targets.len()).all(|i| Position::from_isize(targets[i]) == ps[i]));
 
         assert_eq!(Dir::N.rotated_degrees(90), Dir::E);
         assert_eq!(Dir::N.rotated_degrees(180), Dir::S);
@@ -148,7 +148,7 @@ mod tests {
         let p = Position::default();
         for (d, (x, y)) in all::<ManhattanDir>().zip([(0, -1), (1, 0), (0, 1), (-1, 0)].iter()) {
             let next = d.neighbor(p);
-            assert_eq!(next, Position::from((*x, *y)));
+            assert_eq!(next, Position::from_isize((*x, *y)));
             let inverse = d.inverse().neighbor(next);
             assert_eq!(inverse, p);
         }

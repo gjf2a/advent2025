@@ -254,10 +254,7 @@ mod tests {
         let maze = maze_str.parse::<GridCharWorld>().unwrap();
         println!("{maze}");
         let start = Position::default();
-        let exit = Position::from((
-            maze.width() as isize - 1,
-            maze.height() as isize - 1 as isize,
-        ));
+        let exit = Position::from_usize(maze.width() - 1, maze.height() - 1);
         println!("exit: {exit}");
         let mut searcher = PrioritySearchIter::a_star(
             start,
