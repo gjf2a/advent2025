@@ -89,9 +89,11 @@ fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
         for y in 0..(column_width - 1) {
             let mut total = 0;
             for digit in 0..rows.len() {
-                let multiplier = 10_u64.pow((rows.len() - 1 - digit) as u32);
                 let digit_column = x * column_width + y;
-                total += rows[digit][digit_column..digit_column + 1].parse::<u64>().map(|v| v * multiplier).unwrap_or(0);
+                let column_value = rows[digit][digit_column..digit_column + 1].parse::<u64>().map(|v| v).unwrap_or(0);
+                if column_value > 0 {
+                    total = (total * 10) + column_value;
+                }
             }
             let p = Position::from((x as isize, y as isize));
             nums.insert(p, total);
