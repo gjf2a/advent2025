@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use advent2025::{Part, advent_main, all_lines, grid::GridWorld, multidim::Position};
 use anyhow::bail;
@@ -19,20 +19,16 @@ fn main() -> anyhow::Result<()> {
     })
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 enum Op {
     Add,
     Mul,
 }
 
 impl Op {
-    fn compute_column(&self, world: &GridWorld<Option<u64>>, column: usize) -> u64 {
-        let identity = match self {
-            Self::Add => 0,
-            Self::Mul => 1,
-        };
+    fn compute_column(&self, world: &GridWorld<u64>, column: usize) -> u64 {
         (0..world.height())
-            .map(|y| world.get(column, y).unwrap().unwrap_or(identity))
+            .map(|y| world.get(column, y).unwrap())
             .reduce(|a, b| match self {
                 Self::Add => a + b,
                 Self::Mul => a * b,
@@ -53,14 +49,24 @@ impl FromStr for Op {
     }
 }
 
-fn to_map(filename: &str) -> anyhow::Result<(GridWorld<Option<u64>>, Vec<Op>)> {
+impl Display for Op {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let sym = match self {
+            Self::Add => "+",
+            Self::Mul => "*",
+        };
+        write!(f, "{sym}")
+    }
+}
+
+fn to_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
     let mut nums = HashMap::new();
     let mut ops = vec![];
     for (y, row) in all_lines(filename)?.enumerate() {
         for (x, entry) in row.split_whitespace().enumerate() {
             match entry.parse::<u64>() {
                 Ok(n) => {
-                    nums.insert(Position::from((x as isize, y as isize)), Some(n));
+                    nums.insert(Position::from((x as isize, y as isize)), n);
                 }
                 Err(_) => {
                     ops.push(entry.parse::<Op>()?);
@@ -73,29 +79,27 @@ fn to_map(filename: &str) -> anyhow::Result<(GridWorld<Option<u64>>, Vec<Op>)> {
     Ok((world, ops))
 }
 
-fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<Option<u64>>, Vec<Op>)> {
+fn to_wacky_map(filename: &str) -> anyhow::Result<(GridWorld<u64>, Vec<Op>)> {
     let mut rows = all_lines(filename)?.collect_vec();
     let op_row = rows.pop().unwrap();
+    let ops = op_row.split_whitespace().map(|s| s.parse::<Op>().unwrap()).collect_vec();
+    let column_width = (op_row.len() + 1) / ops.len();
     let mut nums = HashMap::new();
-    for (y, row) in rows.iter().enumerate() {
-        let multiplier = 10_u64.pow((rows.len() - y - 1) as u32);
-        for (x, c) in row.char_indices() {
+    for x in 0..ops.len() {
+        for y in 0..(column_width - 1) {
+            let mut total = 0;
+            for digit in 0..rows.len() {
+                let multiplier = 10_u64.pow((rows.len() - 1 - digit) as u32);
+                let digit_column = x * column_width + y;
+                total += rows[digit][digit_column..digit_column + 1].parse::<u64>().map(|v| v * multiplier).unwrap_or(0);
+            }
             let p = Position::from((x as isize, y as isize));
-            let v = c.to_digit(10).map(|v| v as u64 * multiplier);
-            nums.insert(p, v);
+            nums.insert(p, total);
         }
-    }
-
-    let mut ops = vec![];
-    let mut current_op = Op::Add;
-    for x in 0..op_row.len() {
-        if let Ok(op) = op_row[x..x+1].parse::<Op>() {
-            current_op = op;
-        }
-        ops.push(current_op);
     }
 
     let world = GridWorld::from_map(&nums);
+    println!("{world:?}");
     assert_eq!(world.width(), ops.len());
     Ok((world, ops))
 }
