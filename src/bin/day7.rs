@@ -91,7 +91,9 @@ fn find_many_worlds_trails(world: &GridCharWorld) -> Vec<Vec<usize>> {
             trails.push(new_trail);
         }
     }
-    let ending_counts = (0..world.width()).map(|x| beams_through.count(&(x, world.height() - 2))).sum::<u64>();
+    let ending_counts = (0..world.width())
+        .map(|x| beams_through.count(&(x, world.height() - 2)))
+        .sum::<u64>();
     println!("{ending_counts}");
     trails
 }
@@ -109,7 +111,11 @@ fn count_many_worlds_splits(world: &GridCharWorld) -> u64 {
             beams.insert(splitter - 1);
             beams.insert(splitter + 1);
         }
-        for key in beams_through.all_labels().iter().filter(|(_, row)| *row + 1 == y) {
+        for key in beams_through
+            .all_labels()
+            .iter()
+            .filter(|(_, row)| *row + 1 == y)
+        {
             let x = key.0;
             if splitters.contains(&x) {
                 beams_through.bump_by(&(x + 1, y), beams_through.count(key));
@@ -119,5 +125,7 @@ fn count_many_worlds_splits(world: &GridCharWorld) -> u64 {
             }
         }
     }
-    (0..world.width()).map(|x| beams_through.count(&(x, world.height() - 2))).sum()
+    (0..world.width())
+        .map(|x| beams_through.count(&(x, world.height() - 2)))
+        .sum()
 }
