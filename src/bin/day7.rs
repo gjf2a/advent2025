@@ -63,6 +63,8 @@ fn find_many_worlds_trails(world: &GridCharWorld) -> Vec<Vec<usize>> {
     let mut trails = vec![vec![s[0] as usize]];
     let start_row = s[1] as usize;
     let mut beams = b_tree_set![s[0] as usize];
+    let mut beams_through: HashHistogram<(usize, usize), u64> = HashHistogram::new();
+    beams_through.bump(&(s[0] as usize, s[1] as usize));
     for y in start_row..(world.height() - 1) {
         let splitters = find_splitters(world, y, &beams);
         for splitter in splitters.iter() {
@@ -72,37 +74,50 @@ fn find_many_worlds_trails(world: &GridCharWorld) -> Vec<Vec<usize>> {
         }
         let mut new_trails = vec![];
         for trail in trails.iter_mut() {
-            let end = trail[trail.len() - 1];
-            if splitters.contains(&end) {
+            let x = trail[trail.len() - 1];
+            if splitters.contains(&x) {
                 new_trails.push(trail.clone());
                 let pushed = new_trails.len() - 1;
-                new_trails[pushed].push(end + 1);
-                trail.push(end - 1);
+                new_trails[pushed].push(x + 1);
+                beams_through.bump(&(x + 1, y));
+                trail.push(x - 1);
+                beams_through.bump(&(x - 1, y));
             } else {
-                trail.push(end);
+                trail.push(x);
+                beams_through.bump(&(x, y));
             }
         }
         for new_trail in new_trails {
             trails.push(new_trail);
         }
     }
+    let ending_counts = (0..world.width()).map(|x| beams_through.count(&(x, world.height() - 2))).sum::<u64>();
+    println!("{ending_counts}");
     trails
 }
 
 fn count_many_worlds_splits(world: &GridCharWorld) -> u64 {
     let s = start(world);
     let start_row = s[1] as usize;
-    let mut beam_counts: HashHistogram<usize, u64> = HashHistogram::new();
-    beam_counts.bump(&(s[0] as usize));
-    let mut active_beams = b_tree_set![s[0] as usize];
+    let mut beams = b_tree_set![s[0] as usize];
+    let mut beams_through: HashHistogram<(usize, usize), u64> = HashHistogram::new();
+    beams_through.bump(&(s[0] as usize, s[1] as usize));
     for y in start_row..(world.height() - 1) {
-        for splitter in find_splitters(world, y, &active_beams) {
-            active_beams.remove(&splitter);
-            active_beams.insert(splitter - 1);
-            beam_counts.bump(&(splitter - 1));
-            active_beams.insert(splitter + 1);
-            beam_counts.bump(&(splitter + 1))
+        let splitters = find_splitters(world, y, &beams);
+        for splitter in splitters.iter() {
+            beams.remove(splitter);
+            beams.insert(splitter - 1);
+            beams.insert(splitter + 1);
+        }
+        for key in beams_through.all_labels().iter().filter(|(_, row)| *row + 1 == y) {
+            let x = key.0;
+            if splitters.contains(&x) {
+                beams_through.bump_by(&(x + 1, y), beams_through.count(key));
+                beams_through.bump_by(&(x - 1, y), beams_through.count(key));
+            } else {
+                beams_through.bump_by(&(x, y), beams_through.count(key));
+            }
         }
     }
-    beam_counts.total_count()
+    (0..world.width()).map(|x| beams_through.count(&(x, world.height() - 2))).sum()
 }
