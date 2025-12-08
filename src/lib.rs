@@ -1,10 +1,10 @@
 pub mod combinations;
-pub mod union_find;
 pub mod extended_euclid;
 pub mod graph;
 pub mod grid;
 pub mod multidim;
 pub mod search_iter;
+pub mod union_find;
 
 use std::{
     env,

@@ -108,10 +108,13 @@ impl<N: NumType + Default, const S: usize> Point<N, S> {
 
 impl<N: NumType + Sum, const S: usize> Point<N, S> {
     pub fn sum_squared_differences(&self, other: &Point<N, S>) -> N {
-        self.values().zip(other.values()).map(|(v1, v2)| {
-            let d = if v1 < v2 {v2 - v1} else {v1 - v2};
-            d * d
-        }).sum()
+        self.values()
+            .zip(other.values())
+            .map(|(v1, v2)| {
+                let d = if v1 < v2 { v2 - v1 } else { v1 - v2 };
+                d * d
+            })
+            .sum()
     }
 }
 
