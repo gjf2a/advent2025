@@ -86,7 +86,7 @@ struct Node {
 mod tests {
     use itertools::Itertools;
 
-    use crate::disjoint_set_forest::DisjointSetForest;
+    use crate::union_find::DisjointSetForest;
 
     #[test]
     fn test() {

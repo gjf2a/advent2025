@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use advent2025::{
-    Part, advent_main, all_lines, disjoint_set_forest::DisjointSetForest, multidim::Point,
+    Part, advent_main, all_lines, union_find::DisjointSetForest, multidim::Point,
     search_iter::BfsIter,
 };
 use common_macros::b_tree_set;
