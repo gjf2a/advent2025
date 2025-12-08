@@ -17,12 +17,11 @@ pub struct DisjointSetForest<V: DisjointSetKey> {
 }
 
 impl<V: DisjointSetKey> DisjointSetForest<V> {
-    pub fn make_set(&mut self, value: V) -> usize {
+    pub fn make_set(&mut self, value: V) {
         let parent = self.nodes.len();
         self.nodes.push(Node { parent, size: 1 });
         self.value2index.insert(value, parent);
         self.roots.insert(parent);
-        parent
     }
 
     pub fn num_roots(&self) -> usize {
