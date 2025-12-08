@@ -83,7 +83,10 @@ fn count_many_worlds_splits(world: &GridCharWorld) -> u64 {
     final_row_count(world, &beams_through)
 }
 
-fn prev_row(beams_through: &HashHistogram<(usize, usize), u64>, current_row: usize) -> Vec<(usize, usize)> {
+fn prev_row(
+    beams_through: &HashHistogram<(usize, usize), u64>,
+    current_row: usize,
+) -> Vec<(usize, usize)> {
     beams_through
         .iter()
         .filter(|((_, row), _)| *row + 1 == current_row)
