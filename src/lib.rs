@@ -1,4 +1,5 @@
 pub mod combinations;
+pub mod disjoint_set_forest;
 pub mod extended_euclid;
 pub mod graph;
 pub mod grid;
