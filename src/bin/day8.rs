@@ -47,6 +47,9 @@ fn main() -> anyhow::Result<()> {
             }
             Part::Two => {
                 let mut forest = DisjointSetForest::default();
+                for i in 0..junction_boxes.len() {
+                    forest.make_set(i);
+                }
                 for ((p1, p2), _) in sorted_distances(&distances) {
                     forest.union(p1, p2);
                     if forest.num_roots() == 1 {
@@ -74,11 +77,12 @@ fn distances(junction_boxes: &Vec<Point<u64, 3>>) -> HashMap<(usize, usize), f64
     distances
 }
 
-fn sorted_distances(distances: &HashMap<(usize, usize), f64>) -> impl Iterator<Item=(&(usize, usize), &f64)> {
+fn sorted_distances(
+    distances: &HashMap<(usize, usize), f64>,
+) -> impl Iterator<Item = (&(usize, usize), &f64)> {
     distances
-                    .iter()
-                    .sorted_by(|((_, _), d1), ((_, _), d2)| d1.total_cmp(d2))
-                    
+        .iter()
+        .sorted_by(|((_, _), d1), ((_, _), d2)| d1.total_cmp(d2))
 }
 
 #[derive(Default)]
