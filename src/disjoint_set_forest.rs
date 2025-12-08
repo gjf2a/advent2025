@@ -29,15 +29,18 @@ impl<V: DisjointSetKey> DisjointSetForest<V> {
         self.roots.len()
     }
 
+    fn index_of(&mut self, v: &V) -> usize {
+        if !self.value2index.contains_key(v) {
+            self.make_set(*v);
+        }
+        self.value2index.get(v).copied().unwrap()
+    }
+
     pub fn union(&mut self, v1: &V, v2: &V) {
-        if !self.value2index.contains_key(v1) {
-            self.make_set(*v1);
-        }
-        if !self.value2index.contains_key(v2) {
-            self.make_set(*v2);
-        }
-        let f1 = self.find(*self.value2index.get(v1).unwrap());
-        let f2 = self.find(*self.value2index.get(v2).unwrap());
+        let index1 = self.index_of(v1);
+        let f1 = self.find(index1);
+        let index2 = self.index_of(v2);
+        let f2 = self.find(index2);
         if f1 != f2 {
             if self.nodes[f1].size > self.nodes[f2].size {
                 self.nodes[f2].parent = f1;
