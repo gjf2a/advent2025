@@ -9,11 +9,7 @@ use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
     advent_main(|filename, part, options| {
-        let junction_boxes = all_lines(filename)?
-            .map(|line| {
-                Point::<u64, 3>::from_iter(line.split(",").map(|n| n.parse::<u64>().unwrap()))
-            })
-            .collect_vec();
+        let junction_boxes = parse(filename)?;
         let distances = distances(&junction_boxes);
         match part {
             Part::One => {
@@ -62,6 +58,12 @@ fn main() -> anyhow::Result<()> {
         }
         Ok(())
     })
+}
+
+fn parse(filename: &str) -> anyhow::Result<Vec<Point<u64, 3>>> {
+    Ok(all_lines(filename)?
+        .map(|line| Point::<u64, 3>::from_iter(line.split(",").map(|n| n.parse::<u64>().unwrap())))
+        .collect())
 }
 
 fn distances(junction_boxes: &Vec<Point<u64, 3>>) -> HashMap<(usize, usize), f64> {
