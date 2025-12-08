@@ -106,17 +106,18 @@ impl<N: NumType + Default, const S: usize> Point<N, S> {
     }
 }
 
-impl<N: NumType + ToPrimitive, const S: usize> Point<N, S> {
-    pub fn euclidean_distance(&self, other: &Point<N, S>) -> f64 {
-        self.sum_squared_differences(other).sqrt()
+impl<N: NumType + Sum, const S: usize> Point<N, S> {
+    pub fn sum_squared_differences(&self, other: &Point<N, S>) -> N {
+        self.values().zip(other.values()).map(|(v1, v2)| {
+            let d = if v1 < v2 {v2 - v1} else {v1 - v2};
+            d * d
+        }).sum()
     }
+}
 
-    pub fn sum_squared_differences(&self, other: &Point<N, S>) -> f64 {
-        let mut total = 0.0;
-        for i in 0..S {
-            total += (self[i].to_f64().unwrap() - other[i].to_f64().unwrap()).powi(2);
-        }
-        total
+impl<N: NumType + Sum + ToPrimitive, const S: usize> Point<N, S> {
+    pub fn euclidean_distance(&self, other: &Point<N, S>) -> f64 {
+        self.sum_squared_differences(other).to_f64().unwrap().sqrt()
     }
 }
 
