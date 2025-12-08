@@ -663,10 +663,7 @@ mod tests {
 
     #[test]
     fn test_euclidean_distance() {
-        for ((x1, y1), (x2, y2), d) in [
-            ((0, 0), (3, 4), 5.0),
-            ((1, 2), (6, 14), 13.0)
-        ] {
+        for ((x1, y1), (x2, y2), d) in [((0, 0), (3, 4), 5.0), ((1, 2), (6, 14), 13.0)] {
             let p1 = Position::from_usize(x1, y1);
             let p2 = Position::from_usize(x2, y2);
             assert_eq!(p1.euclidean_distance(&p2), d);
