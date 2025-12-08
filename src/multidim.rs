@@ -11,6 +11,7 @@ use std::{
 use anyhow::anyhow;
 use bare_metal_modulo::NumType;
 use enum_iterator::{Sequence, all};
+use num::ToPrimitive;
 
 use crate::all_lines;
 
@@ -102,6 +103,20 @@ impl<N: NumType + Default, const S: usize> Point<N, S> {
                 Self::bb_help(result, copied, a, b, start + 1);
             }
         }
+    }
+}
+
+impl<N: NumType + ToPrimitive, const S: usize> Point<N, S> {
+    pub fn euclidean_distance(&self, other: &Point<N, S>) -> f64 {
+        self.sum_squared_differences(other).sqrt()
+    }
+
+    pub fn sum_squared_differences(&self, other: &Point<N, S>) -> f64 {
+        let mut total = 0.0;
+        for i in 0..S {
+            total += (self[i].to_f64().unwrap() - other[i].to_f64().unwrap()).powi(2);
+        }
+        total
     }
 }
 
@@ -643,6 +658,18 @@ mod tests {
         for d in all::<Dir>() {
             let q = d.neighbor(p);
             assert_eq!(Some(d), Dir::dir_from_to(p, q));
+        }
+    }
+
+    #[test]
+    fn test_euclidean_distance() {
+        for ((x1, y1), (x2, y2), d) in [
+            ((0, 0), (3, 4), 5.0),
+            ((1, 2), (6, 14), 13.0)
+        ] {
+            let p1 = Position::from_usize(x1, y1);
+            let p2 = Position::from_usize(x2, y2);
+            assert_eq!(p1.euclidean_distance(&p2), d);
         }
     }
 }
