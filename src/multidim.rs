@@ -13,7 +13,7 @@ use bare_metal_modulo::NumType;
 use enum_iterator::{Sequence, all};
 use num::ToPrimitive;
 
-use crate::all_lines;
+use crate::{all_lines, sub_abs};
 
 pub type Position = Point<isize, 2>;
 
@@ -111,9 +111,16 @@ impl<N: NumType + Sum, const S: usize> Point<N, S> {
         self.values()
             .zip(other.values())
             .map(|(v1, v2)| {
-                let d = if v1 < v2 { v2 - v1 } else { v1 - v2 };
+                let d = sub_abs(v1, v2);
                 d * d
             })
+            .sum()
+    }
+
+    pub fn manhattan_distance(&self, other: &Point<N, S>) -> N {
+        self.values()
+            .zip(other.values())
+            .map(|(v1, v2)| sub_abs(v1, v2))
             .sum()
     }
 }
@@ -125,10 +132,6 @@ impl<N: NumType + Sum + ToPrimitive, const S: usize> Point<N, S> {
 }
 
 impl<N: NumType + num::traits::Signed + Sum<N> + Default, const S: usize> Point<N, S> {
-    pub fn manhattan_distance(&self, other: &Point<N, S>) -> N {
-        (0..S).map(|i| (self[i] - other[i]).abs()).sum()
-    }
-
     pub fn abs(&self) -> Self {
         Self {
             coords: self.coords.map(|c| c.abs()),
@@ -671,6 +674,20 @@ mod tests {
             let p1 = Position::from_usize(x1, y1);
             let p2 = Position::from_usize(x2, y2);
             assert_eq!(p1.euclidean_distance(&p2), d);
+        }
+    }
+
+    #[test]
+    fn test_manhattan_distance() {
+        for ((x1, y1), (x2, y2), d) in [
+            ((1, 2), (3, 4), 4),
+            ((10, 2), (4, 5), 9),
+            ((10, 2), (3, 1), 8),
+            ((7, 4), (11, 2), 6),
+        ] {
+            let p1 = Position::from_usize(x1, y1);
+            let p2 = Position::from_usize(x2, y2);
+            assert_eq!(p1.manhattan_distance(&p2), d);
         }
     }
 }

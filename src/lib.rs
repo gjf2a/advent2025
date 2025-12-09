@@ -82,6 +82,10 @@ pub fn log_floor<N: Integer + Copy + DivAssign + AddAssign>(mut num: N, base: N)
     result
 }
 
+pub fn sub_abs<N: Integer + Copy>(one: N, two: N) -> N {
+    if one < two { two - one } else { one - two }
+}
+
 #[cfg(test)]
 mod tests {
     use enum_iterator::all;
