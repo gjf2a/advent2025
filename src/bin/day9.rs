@@ -39,3 +39,21 @@ fn rectangle_area(p1: &Point<u64, 2>, p2: &Point<u64, 2>) -> u64 {
         .map(|(v1, v2)| 1 + sub_abs(v1, v2))
         .product()
 }
+
+fn is_green_tile_edge(red_tiles: &Vec<Point<u64, 2>>, candidate: &Point<u64, 2>) -> bool {
+    (0..red_tiles.len() - 1)
+        .map(|i| (red_tiles[i], red_tiles[i + 1]))
+        .any(|(p1, p2)| between(&p1, &p2, candidate))
+}
+
+fn between(p1: &Point<u64, 2>, p2: &Point<u64, 2>, candidate: &Point<u64, 2>) -> bool {
+    if p1[0] == p2[0] {
+        candidate[1] >= p1[1] && candidate[1] <= p2[1]
+            || candidate[1] >= p2[1] && candidate[1] <= p1[1]
+    } else if p1[1] == p2[1] {
+        candidate[0] >= p1[0] && candidate[0] <= p2[0]
+            || candidate[0] >= p2[0] && candidate[1] <= p1[0]
+    } else {
+        false
+    }
+}
