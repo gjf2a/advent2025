@@ -1,20 +1,23 @@
-use std::{cmp::max, fmt::Display, str::FromStr};
+use std::{cmp::max, fmt::Display, ops::BitXor, str::FromStr};
 
-use advent2025::{Part, advent_main, all_lines};
+use advent2025::{Part, advent_main, all_lines, search_iter::BfsIter};
 use anyhow::bail;
 use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
     advent_main(|filename, part, _| {
         let machines = all_lines(filename)?
-            .map(|line| line.parse::<Machine>().unwrap())
+            .map(|line| line.parse::<MachineSpec>().unwrap())
             .collect_vec();
-        for machine in machines.iter() {
-            println!("{machine}");
-        }
+        MachineSpec::assert_valid(&machines, filename)?;
+
         match part {
             Part::One => {
-                todo!("No part 1 yet")
+                let score = machines
+                    .iter()
+                    .map(|m| m.min_button_presses())
+                    .sum::<usize>();
+                println!("{score}");
             }
             Part::Two => {
                 todo!("No part 2 yet")
@@ -24,10 +27,99 @@ fn main() -> anyhow::Result<()> {
     })
 }
 
-#[derive(Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Default)]
+struct MachineSpec {
+    target: Bits,
+    buttons: Vec<Bits>,
+    joltages: Vec<u64>,
+}
+
+impl MachineSpec {
+    fn min_button_presses(&self) -> usize {
+        let mut iter = BfsIter::new(Bits::default(), |s| self.successors_of(s));
+        let found = iter.by_ref().find(|b| b.bits == self.target.bits).unwrap();
+        iter.depth_for(&found)
+    }
+
+    fn successors_of(&self, bits: &Bits) -> Vec<Bits> {
+        self.buttons.iter().map(|button| *bits ^ *button).collect()
+    }
+
+    fn assert_valid(machines: &Vec<Self>, filename: &str) -> anyhow::Result<()> {
+        assert!(
+            machines
+                .iter()
+                .zip(all_lines(filename)?)
+                .all(|(machine, line)| format!("{machine}") == *line)
+        );
+        Ok(())
+    }
+}
+
+impl FromStr for MachineSpec {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut result = MachineSpec::default();
+        for part in s.split_whitespace() {
+            match &part[0..1] {
+                "[" => {
+                    result.target = part.parse::<Bits>()?;
+                }
+                "{" => {
+                    let inner = &part[1..part.len() - 1];
+                    result.joltages = inner
+                        .split(',')
+                        .map(|n| n.parse::<u64>().unwrap())
+                        .collect();
+                }
+                "(" => {
+                    result.buttons.push(part.parse::<Bits>()?);
+                }
+                _ => bail!("Unrecognized token: {part}"),
+            }
+        }
+        Ok(result)
+    }
+}
+
+impl Display for MachineSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let target = self
+            .target
+            .iter()
+            .map(|v| if v { '#' } else { '.' })
+            .collect::<String>();
+        write!(f, "[{target}]")?;
+        for button in self.buttons.iter() {
+            let button_str = button
+                .iter()
+                .enumerate()
+                .filter(|(_, v)| *v)
+                .map(|(i, _)| format!("{i}"))
+                .join(",");
+            write!(f, " ({button_str})")?;
+        }
+        let joltage_str = self.joltages.iter().join(",");
+        write!(f, " {{{joltage_str}}}")
+    }
+}
+
+#[derive(Default, Copy, Clone, PartialEq, Eq, Hash, Debug)]
 struct Bits {
     bits: u16,
     num_bits: u16,
+}
+
+impl BitXor for Bits {
+    type Output = Self;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self {
+            bits: self.bits ^ rhs.bits,
+            num_bits: max(self.num_bits, rhs.num_bits),
+        }
+    }
 }
 
 impl Bits {
@@ -107,61 +199,5 @@ impl Iterator for BitIterator {
             self.i += 1;
             Some(result)
         }
-    }
-}
-
-#[derive(Default)]
-struct Machine {
-    target: Bits,
-    buttons: Vec<Bits>,
-    joltages: Vec<u64>,
-}
-
-impl FromStr for Machine {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut result = Machine::default();
-        for part in s.split_whitespace() {
-            match &part[0..1] {
-                "[" => {
-                    result.target = part.parse::<Bits>()?;
-                }
-                "{" => {
-                    let inner = &part[1..part.len() - 1];
-                    result.joltages = inner
-                        .split(',')
-                        .map(|n| n.parse::<u64>().unwrap())
-                        .collect();
-                }
-                "(" => {
-                    result.buttons.push(part.parse::<Bits>()?);
-                }
-                _ => bail!("Unrecognized token: {part}"),
-            }
-        }
-        Ok(result)
-    }
-}
-
-impl Display for Machine {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let target = self
-            .target
-            .iter()
-            .map(|v| if v { '#' } else { '.' })
-            .collect::<String>();
-        write!(f, "[{target}]")?;
-        for button in self.buttons.iter() {
-            let button_str = button
-                .iter()
-                .enumerate()
-                .filter(|(_, v)| *v)
-                .map(|(i, _)| format!("{i}"))
-                .join(",");
-            write!(f, " ({button_str})")?;
-        }
-        let joltage_str = self.joltages.iter().join(",");
-        write!(f, " {{{joltage_str}}}")
     }
 }
