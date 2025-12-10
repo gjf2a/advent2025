@@ -6,7 +6,9 @@ use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
     advent_main(|filename, part, _| {
-        let machines = all_lines(filename)?.map(|line| line.parse::<Machine>().unwrap()).collect_vec();
+        let machines = all_lines(filename)?
+            .map(|line| line.parse::<Machine>().unwrap())
+            .collect_vec();
         for machine in machines.iter() {
             println!("{machine}");
         }
@@ -68,7 +70,7 @@ impl FromStr for Bits {
                     result.add(match c {
                         '#' => true,
                         '.' => false,
-                        _ => bail!("Unrecognized token: {c}")
+                        _ => bail!("Unrecognized token: {c}"),
                     });
                 }
             }
@@ -77,7 +79,7 @@ impl FromStr for Bits {
                     result.set(c.parse::<u16>()?);
                 }
             }
-            _ => bail!("Unrecognized token: {s}")
+            _ => bail!("Unrecognized token: {s}"),
         }
         Ok(result)
     }
@@ -90,7 +92,7 @@ struct BitIterator {
 
 impl BitIterator {
     fn new(bits: Bits) -> Self {
-        Self {bits, i: 0}
+        Self { bits, i: 0 }
     }
 }
 
@@ -107,8 +109,6 @@ impl Iterator for BitIterator {
         }
     }
 }
-
-
 
 #[derive(Default)]
 struct Machine {
@@ -129,24 +129,36 @@ impl FromStr for Machine {
                 }
                 "{" => {
                     let inner = &part[1..part.len() - 1];
-                    result.joltages = inner.split(',').map(|n| n.parse::<u64>().unwrap()).collect();
+                    result.joltages = inner
+                        .split(',')
+                        .map(|n| n.parse::<u64>().unwrap())
+                        .collect();
                 }
                 "(" => {
                     result.buttons.push(part.parse::<Bits>()?);
                 }
-                _ => bail!("Unrecognized token: {part}")
+                _ => bail!("Unrecognized token: {part}"),
             }
         }
-        Ok(result) 
+        Ok(result)
     }
 }
 
 impl Display for Machine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let target = self.target.iter().map(|v| if v {'#'} else {'.'}).collect::<String>();
+        let target = self
+            .target
+            .iter()
+            .map(|v| if v { '#' } else { '.' })
+            .collect::<String>();
         write!(f, "[{target}]")?;
         for button in self.buttons.iter() {
-            let button_str = button.iter().enumerate().filter(|(_,v)| *v).map(|(i,_)| format!("{i}")).join(",");
+            let button_str = button
+                .iter()
+                .enumerate()
+                .filter(|(_, v)| *v)
+                .map(|(i, _)| format!("{i}"))
+                .join(",");
             write!(f, " ({button_str})")?;
         }
         let joltage_str = self.joltages.iter().join(",");
