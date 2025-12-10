@@ -1,4 +1,4 @@
-use std::{cmp::max, fmt::Display, ops::BitXor, str::FromStr};
+use std::{cmp::max, fmt::Display, iter::repeat, ops::BitXor, str::FromStr};
 
 use advent2025::{Part, advent_main, all_lines, search_iter::BfsIter};
 use anyhow::bail;
@@ -15,12 +15,16 @@ fn main() -> anyhow::Result<()> {
             Part::One => {
                 let score = machines
                     .iter()
-                    .map(|m| m.min_button_presses())
+                    .map(|m| m.min_button_presses_indicator_lights())
                     .sum::<usize>();
                 println!("{score}");
             }
             Part::Two => {
-                todo!("No part 2 yet")
+                let score = machines
+                    .iter()
+                    .map(|m| m.min_button_presses_joltage())
+                    .sum::<usize>();
+                println!("{score}");
             }
         }
         Ok(())
@@ -31,18 +35,52 @@ fn main() -> anyhow::Result<()> {
 struct MachineSpec {
     target: Bits,
     buttons: Vec<Bits>,
-    joltages: Vec<u64>,
+    joltages: Vec<usize>,
 }
 
 impl MachineSpec {
-    fn min_button_presses(&self) -> usize {
-        let mut iter = BfsIter::new(Bits::default(), |s| self.successors_of(s));
+    fn min_button_presses_indicator_lights(&self) -> usize {
+        let mut iter = BfsIter::new(Bits::default(), |s| self.successors_indicator_lights(s));
         let found = iter.by_ref().find(|b| b.bits == self.target.bits).unwrap();
         iter.depth_for(&found)
     }
 
-    fn successors_of(&self, bits: &Bits) -> Vec<Bits> {
+    fn min_button_presses_joltage(&self) -> usize {
+        let mut iter = BfsIter::new(
+            repeat(0).take(self.target.num_bits as usize).collect(),
+            |s| self.successors_joltage(s),
+        );
+        let found = iter
+            .by_ref()
+            .filter(|counters| {
+                counters
+                    .iter()
+                    .enumerate()
+                    .all(|(i, c)| *c <= self.joltages[i])
+            })
+            .find(|counters| {
+                counters
+                    .iter()
+                    .enumerate()
+                    .all(|(i, c)| *c == self.joltages[i])
+            })
+            .unwrap();
+        iter.depth_for(&found)
+    }
+
+    fn successors_indicator_lights(&self, bits: &Bits) -> Vec<Bits> {
         self.buttons.iter().map(|button| *bits ^ *button).collect()
+    }
+
+    fn successors_joltage(&self, counters: &Vec<usize>) -> Vec<Vec<usize>> {
+        self.buttons
+            .iter()
+            .map(|button| {
+                let mut counters = counters.clone();
+                joltage_count(button, &mut counters);
+                counters
+            })
+            .collect()
     }
 
     fn assert_valid(machines: &Vec<Self>, filename: &str) -> anyhow::Result<()> {
@@ -53,6 +91,12 @@ impl MachineSpec {
                 .all(|(machine, line)| format!("{machine}") == *line)
         );
         Ok(())
+    }
+}
+
+fn joltage_count(button: &Bits, counters: &mut Vec<usize>) {
+    for (i, _) in button.iter().enumerate().filter(|(_, v)| *v) {
+        counters[i] += 1;
     }
 }
 
@@ -70,7 +114,7 @@ impl FromStr for MachineSpec {
                     let inner = &part[1..part.len() - 1];
                     result.joltages = inner
                         .split(',')
-                        .map(|n| n.parse::<u64>().unwrap())
+                        .map(|n| n.parse::<usize>().unwrap())
                         .collect();
                 }
                 "(" => {
