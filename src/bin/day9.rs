@@ -1,6 +1,4 @@
-use std::
-    cmp::{max, min}
-;
+use std::cmp::{max, min};
 
 use advent2025::{Part, advent_main, all_lines, multidim::Point, sub_abs};
 use itertools::Itertools;
@@ -13,29 +11,22 @@ fn main() -> anyhow::Result<()> {
         let rects = all_rectangles(&red_tiles);
         match part {
             Part::One => {
-                let biggest = rects
-                    .iter()
-                    .map(|(p1, p2)| rectangle_area(p1, p2))
-                    .max()
-                    .unwrap();
-                println!("{biggest}");
+                println!("{}", largest_rectangle_area(&rects));
             }
             Part::Two => {
                 let edges = RedEdges::new(&red_tiles);
-                if options.contains(&"-approved") {
-                    let approved = rects
-                        .iter()
-                        .filter(|(p1, p2)| edges.rectangle_approved(p1, p2))
-                        .collect_vec();
-                    println!("{approved:?}");
-                }
-                let biggest = rects
+                let approved = rects
                     .iter()
                     .filter(|(p1, p2)| edges.rectangle_approved(p1, p2))
-                    .map(|(p1, p2)| rectangle_area(p1, p2))
-                    .max()
-                    .unwrap();
-                println!("{biggest}");
+                    .copied()
+                    .collect_vec();
+                if options.contains(&"-approved") {
+                    println!("{approved:?}");
+                }
+                if options.contains(&"-approved-count") {
+                    println!("approved {}/{}", approved.len(), rects.len());
+                }
+                println!("{}", largest_rectangle_area(&approved));
             }
         }
         Ok(())
@@ -50,6 +41,14 @@ fn all_rectangles(red_tiles: &Vec<Corner>) -> Vec<(Corner, Corner)> {
         }
     }
     result
+}
+
+fn largest_rectangle_area(rects: &Vec<(Corner, Corner)>) -> u64 {
+    rects
+        .iter()
+        .map(|(p1, p2)| rectangle_area(p1, p2))
+        .max()
+        .unwrap()
 }
 
 fn get_red_tiles(filename: &str) -> anyhow::Result<Vec<Point<u64, 2>>> {
@@ -184,11 +183,11 @@ impl PartialOrd for LevelInterval {
             Tilt::Horizontal => match other.tilt {
                 Tilt::Horizontal => self.start.partial_cmp(&other.start),
                 Tilt::Vertical => self.start.partial_cmp(&other.level),
-            }
+            },
             Tilt::Vertical => match other.tilt {
                 Tilt::Horizontal => self.level.partial_cmp(&other.start),
                 Tilt::Vertical => self.level.partial_cmp(&other.level),
-            }
+            },
         }
     }
 }
