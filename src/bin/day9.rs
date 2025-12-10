@@ -181,13 +181,33 @@ impl PartialOrd for LevelInterval {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self.tilt {
             Tilt::Horizontal => match other.tilt {
-                Tilt::Horizontal => self.start.partial_cmp(&other.start),
-                Tilt::Vertical => self.start.partial_cmp(&other.level),
+                Tilt::Horizontal => {
+                    assert_eq!(self.level, other.level);
+                    self.start.partial_cmp(&other.start)
+                }
+                Tilt::Vertical => Some(compare_mixed(other, self).reverse()),
+                //Tilt::Vertical => self.start.partial_cmp(&other.level)
             },
             Tilt::Vertical => match other.tilt {
-                Tilt::Horizontal => self.level.partial_cmp(&other.start),
-                Tilt::Vertical => self.level.partial_cmp(&other.level),
+                //Tilt::Horizontal => self.level.partial_cmp(&other.start),
+                Tilt::Horizontal => Some(compare_mixed(self, other)),
+                Tilt::Vertical => {
+                    assert_ne!(self.level, other.level);
+                    self.level.partial_cmp(&other.level)
+                }
             },
         }
+    }
+}
+
+fn compare_mixed(v: &LevelInterval, h: &LevelInterval) -> std::cmp::Ordering {
+    assert_eq!(v.tilt, Tilt::Vertical);
+    assert_eq!(h.tilt, Tilt::Horizontal);
+    if v.level <= h.start {
+        std::cmp::Ordering::Less
+    } else if v.level < h.end {
+        panic!("This should never happen");
+    } else {
+        std::cmp::Ordering::Greater
     }
 }
