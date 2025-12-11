@@ -9,12 +9,18 @@ fn main() -> anyhow::Result<()> {
         let graph = graph_from_file(filename)?;
         match part {
             Part::One => {
-                let mut path_length_table = PathsEndingAtTable::new(graph.reversed(), &"you");
-                let total_paths = path_length_table.paths_ending_at(&"out");
-                println!("{total_paths}");
+                let count = PathsEndingAtTable::path_count(graph.reversed(), "you", "out");
+                println!("{count}");
             }
             Part::Two => {
-                todo!("No part 2 yet")
+                let svr2fft = PathsEndingAtTable::path_count(graph.without("dac").reversed(), "svr", "fft");
+                let fft2dac = PathsEndingAtTable::path_count(graph.reversed(), "fft", "dac");
+                let dac2out = PathsEndingAtTable::path_count(graph.without("fft").reversed(), "fft", "out");
+                let svr2dac = PathsEndingAtTable::path_count(graph.without("fft").reversed(), "svr", "dac");
+                let dac2fft = PathsEndingAtTable::path_count(graph.reversed(), "dac", "fft");
+                let fft2out = PathsEndingAtTable::path_count(graph.without("dac"), "fft", "out");
+                let total = svr2fft + fft2dac + dac2out + svr2dac + dac2fft + fft2out;
+                println!("{total}");
             }
         }
         Ok(())
@@ -48,6 +54,11 @@ impl PathsEndingAtTable {
         }
     }
 
+    fn path_count(reversed: AdjacencySets, start_node: &str, end_node: &str) -> u64 {
+        let mut table = Self::new(reversed, start_node);
+        table.paths_ending_at(end_node)
+    }
+
     fn paths_ending_at(&mut self, node: &str) -> u64 {
         match self.ending_at.get(node) {
             Some(v) => *v,
@@ -67,3 +78,8 @@ impl PathsEndingAtTable {
         }
     }
 }
+
+// no_dac.paths_starting_ending(svr, fft) + everyone.paths_starting_ending(fft, dac) + no_fft.paths_starting_ending(dac, out)
+// + no_fft.paths_starting_ending(svr, dac) + everyone.paths_starting_ending(dac, fft) + no_dac.paths_starting_ending(fft, out)
+//
+// Use three tables: one with everyone, one without fft, and one without dac.
