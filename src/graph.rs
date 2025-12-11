@@ -84,6 +84,16 @@ impl AdjacencySets {
         }
         result
     }
+
+    pub fn without(&self, node_to_remove: &str) -> Self {
+        let mut result = Self::default();
+        for (p1, p2) in self.pairs() {
+            if p1 != node_to_remove && p2 != node_to_remove {
+                result.connect(p1, p2);
+            }
+        }
+        result
+    }
 }
 
 #[cfg(test)]
@@ -190,5 +200,13 @@ mod tests {
                 .zip(["eee", "fff", "ggg", "iii"])
                 .all(|(a, b)| a == b)
         );
+
+        let no_eee_graph = graph.without(&"eee");
+        for (start, ends) in test_input.iter() {
+            for end in ends.split_whitespace() {
+                let is_eee = *start == "eee" || end == "eee";
+                assert!(no_eee_graph.are_connected(start, end) != is_eee);
+            }
+        }
     }
 }
