@@ -8,6 +8,7 @@ use common_macros::b_tree_set;
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct AdjacencySets {
     graph: BTreeMap<String, BTreeSet<String>>,
+    empty: BTreeSet<String>, // Always empty. Facilitates neighbors_of()
 }
 
 impl AdjacencySets {
@@ -47,8 +48,8 @@ impl AdjacencySets {
         })
     }
 
-    pub fn neighbors_of(&self, node: &str) -> Option<impl Iterator<Item = &str>> {
-        self.graph.get(node).map(|n| n.iter().map(|s| s.as_str()))
+    pub fn neighbors_of(&self, node: &str) -> impl Iterator<Item = &str> {
+        self.graph.get(node).unwrap_or(&self.empty).iter().map(|s| s.as_str())
     }
 
     pub fn are_connected(&self, start: &str, end: &str) -> bool {
@@ -75,6 +76,8 @@ impl AdjacencySets {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
     use itertools::Itertools;
 
     use crate::{graph::AdjacencySets, search_iter::BfsIter};
@@ -99,7 +102,7 @@ mod tests {
 
         let keys = graph.keys().collect::<Vec<_>>();
         assert_eq!(keys, vec!["A", "b", "c", "d", "end", "start"]);
-        let mut searcher = BfsIter::new("start", |s| graph.neighbors_of(s).unwrap().collect());
+        let mut searcher = BfsIter::new("start", |s| graph.neighbors_of(s).collect());
         let found = searcher.by_ref().collect_vec();
         assert_eq!(found, vec!["start", "A", "b", "c", "end", "d"]);
 
@@ -158,6 +161,9 @@ mod tests {
                 assert!(graph.are_connected(start, end));
                 assert!(!graph.are_connected(end, start));
             }
+            let expected_neighbors: BTreeSet<&str> = ends.split_whitespace().collect();
+            let actual_neighbors: BTreeSet<&str> = graph.neighbors_of(start).collect();
+            assert_eq!(expected_neighbors, actual_neighbors);
         }
     }
 }
