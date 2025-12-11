@@ -49,7 +49,11 @@ impl AdjacencySets {
     }
 
     pub fn neighbors_of(&self, node: &str) -> impl Iterator<Item = &str> {
-        self.graph.get(node).unwrap_or(&self.empty).iter().map(|s| s.as_str())
+        self.graph
+            .get(node)
+            .unwrap_or(&self.empty)
+            .iter()
+            .map(|s| s.as_str())
     }
 
     pub fn are_connected(&self, start: &str, end: &str) -> bool {
@@ -154,7 +158,7 @@ mod tests {
             ("fff", "out"),
             ("ggg", "out"),
             ("hhh", "ccc fff iii"),
-            ("iii", "out")
+            ("iii", "out"),
         ];
         let mut graph = AdjacencySets::default();
         for (start, ends) in test_input.iter() {
@@ -179,5 +183,12 @@ mod tests {
             assert!(reversed.are_connected(end, start));
             assert!(!reversed.are_connected(start, end));
         }
+
+        assert!(
+            graph
+                .neighbors_of(&"-out")
+                .zip(["eee", "fff", "ggg", "iii"])
+                .all(|(a, b)| a == b)
+        );
     }
 }
