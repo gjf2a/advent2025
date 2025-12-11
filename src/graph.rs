@@ -72,6 +72,14 @@ impl AdjacencySets {
             }
         }
     }
+
+    pub fn reversed(&self) -> Self {
+        let mut result = AdjacencySets::default();
+        for (start, end) in self.pairs() {
+            result.connect(end, start);
+        }
+        result
+    }
 }
 
 #[cfg(test)]
@@ -164,6 +172,12 @@ mod tests {
             let expected_neighbors: BTreeSet<&str> = ends.split_whitespace().collect();
             let actual_neighbors: BTreeSet<&str> = graph.neighbors_of(start).collect();
             assert_eq!(expected_neighbors, actual_neighbors);
+        }
+
+        let reversed = graph.reversed();
+        for (start, end) in graph.pairs() {
+            assert!(reversed.are_connected(end, start));
+            assert!(!reversed.are_connected(start, end));
         }
     }
 }
