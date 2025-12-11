@@ -47,8 +47,8 @@ impl AdjacencySets {
         })
     }
 
-    pub fn neighbors_of(&self, node: &str) -> impl Iterator<Item = &str> {
-        self.graph.get(node).unwrap().iter().map(|s| s.as_str())
+    pub fn neighbors_of(&self, node: &str) -> Option<impl Iterator<Item = &str>> {
+        self.graph.get(node).map(|n| n.iter().map(|s| s.as_str()))
     }
 
     pub fn are_connected(&self, start: &str, end: &str) -> bool {
@@ -79,9 +79,6 @@ mod tests {
 
     use crate::{graph::AdjacencySets, search_iter::BfsIter};
 
-    // TODO: Need more tests for the following:
-    // * Directed graph example
-
     #[test]
     fn graph_test() {
         let mut graph = AdjacencySets::default();
@@ -102,7 +99,7 @@ mod tests {
 
         let keys = graph.keys().collect::<Vec<_>>();
         assert_eq!(keys, vec!["A", "b", "c", "d", "end", "start"]);
-        let mut searcher = BfsIter::new("start", |s| graph.neighbors_of(s).collect());
+        let mut searcher = BfsIter::new("start", |s| graph.neighbors_of(s).unwrap().collect());
         let found = searcher.by_ref().collect_vec();
         assert_eq!(found, vec!["start", "A", "b", "c", "end", "d"]);
 
@@ -125,11 +122,42 @@ mod tests {
         ] {
             graph.connect2(a, b);
         }
+        assert!(!graph.is_directed());
 
         let pair_str = format!("{:?}", graph.pairs().collect_vec());
         assert_eq!(
             pair_str.as_str(),
             r#"[("A", "b"), ("A", "c"), ("A", "end"), ("A", "start"), ("b", "A"), ("b", "d"), ("b", "end"), ("b", "start"), ("c", "A"), ("d", "b"), ("end", "A"), ("end", "b"), ("start", "A"), ("start", "b")]"#
         );
+    }
+
+    #[test]
+    fn test_directed_neighbors() {
+        let test_input = [
+            ("aaa", "you hhh"),
+            ("you", "bbb ccc"),
+            ("bbb", "ddd eee"),
+            ("ccc", "ddd eee fff"),
+            ("ddd", "ggg"),
+            ("eee", "out"),
+            ("fff", "out"),
+            ("ggg", "out"),
+            ("hhh", "ccc fff iii"),
+            ("iii", "out")
+        ];
+        let mut graph = AdjacencySets::default();
+        for (start, ends) in test_input.iter() {
+            for end in ends.split_whitespace() {
+                graph.connect(start, end);
+            }
+        }
+        assert!(graph.is_directed());
+
+        for (start, ends) in test_input.iter() {
+            for end in ends.split_whitespace() {
+                assert!(graph.are_connected(start, end));
+                assert!(!graph.are_connected(end, start));
+            }
+        }
     }
 }
