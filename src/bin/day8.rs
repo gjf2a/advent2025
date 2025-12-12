@@ -1,45 +1,28 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::HashMap;
 
-use advent2025::{
-    Part, advent_main, all_lines, multidim::Point, search_iter::BfsIter,
-    union_find::DisjointSetForest,
-};
-use common_macros::b_tree_set;
+use advent2025::{Part, advent_main, all_lines, multidim::Point, union_find::DisjointSetForest};
 use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
-    advent_main(|filename, part, options| {
+    advent_main(|filename, part, _| {
         let junction_boxes = parse(filename)?;
         let distances = distances(&junction_boxes);
         match part {
             Part::One => {
                 let num_pairs = if filename.contains("ex") { 10 } else { 1000 };
-                let chosen_pairs = sorted_distances(&distances)
+                let mut forest = DisjointSetForest::default();
+                for (p1, p2) in sorted_distances(&distances)
                     .take(num_pairs)
                     .map(|((x, y), _)| (*x, *y))
-                    .collect_vec();
-                if options.contains(&"-union_find") {
-                    let mut forest = DisjointSetForest::default();
-                    for (p1, p2) in chosen_pairs.iter() {
-                        forest.union(p1, p2);
-                    }
-                    let score = forest
-                        .all_sizes()
-                        .sorted_by_key(|s| -(*s as isize))
-                        .take(3)
-                        .product::<usize>();
-                    println!("{score}");
-                } else {
-                    let graph = AdjacencySets::new(&chosen_pairs);
-                    let score = graph
-                        .circuits()
-                        .iter()
-                        .map(|c| c.len())
-                        .sorted_by_key(|c| -(*c as isize))
-                        .take(3)
-                        .product::<usize>();
-                    println!("{score}");
+                {
+                    forest.union(&p1, &p2);
                 }
+                let score = forest
+                    .all_sizes()
+                    .sorted_by_key(|s| -(*s as isize))
+                    .take(3)
+                    .product::<usize>();
+                println!("{score}");
             }
             Part::Two => {
                 let mut forest = DisjointSetForest::default();
@@ -85,47 +68,4 @@ fn sorted_distances(
     distances
         .iter()
         .sorted_by(|((_, _), d1), ((_, _), d2)| d1.total_cmp(d2))
-}
-
-#[derive(Default)]
-struct AdjacencySets {
-    adj: BTreeMap<usize, BTreeSet<usize>>,
-}
-
-impl AdjacencySets {
-    fn connect2(&mut self, a: usize, b: usize) {
-        self.connect(a, b);
-        self.connect(b, a);
-    }
-
-    fn connect(&mut self, a: usize, b: usize) {
-        match self.adj.get_mut(&a) {
-            Some(ends) => {
-                ends.insert(b);
-            }
-            None => {
-                self.adj.insert(a, b_tree_set! {b});
-            }
-        }
-    }
-
-    fn new(pairs: &Vec<(usize, usize)>) -> Self {
-        let mut result = Self::default();
-        for (a, b) in pairs.iter() {
-            result.connect2(*a, *b);
-        }
-        result
-    }
-
-    fn reachable_from(&self, a: usize) -> Vec<usize> {
-        BfsIter::new(a, |n| {
-            self.adj.get(&n).unwrap().iter().copied().collect_vec()
-        })
-        .sorted()
-        .collect()
-    }
-
-    fn circuits(&self) -> HashSet<Vec<usize>> {
-        self.adj.keys().map(|k| self.reachable_from(*k)).collect()
-    }
 }
