@@ -12,7 +12,7 @@ fn main() -> anyhow::Result<()> {
             Part::One => all_rectangles(&red_tiles),
             Part::Two => legit_rectangles(&red_tiles),
         };
-        println!("{}", largest_rectangle_area(&rects));    
+        println!("{}", largest_rectangle_area(&rects));
         Ok(())
     })
 }
@@ -72,15 +72,21 @@ fn is_legit(red_tiles: &Vec<Corner>, i: usize, j: usize) -> bool {
     let red2 = red_tiles[j];
     let pre1 = red_tiles[(i - 1).mod_floor(&red_tiles.len())];
     assert!(j > 0);
-    let pre2 = red_tiles[j - 1]; 
+    let pre2 = red_tiles[j - 1];
 
-    red1[0] == red2[0] || red1[1] == red2[1] 
+    red1[0] == red2[0] || red1[1] == red2[1]
 }
 
-fn find_horizontal_ys(red_tiles: &Vec<Corner>) -> Vec<(usize,u64)> {
-    (0..red_tiles.len()).filter(|i| red_tiles[*i][0] == red_tiles[(i + 1) % red_tiles.len()][0]).map(|i| (i, red_tiles[i][1])).collect()
+fn find_horizontal_ys(red_tiles: &Vec<Corner>) -> Vec<(usize, u64)> {
+    (0..red_tiles.len())
+        .filter(|i| red_tiles[*i][0] == red_tiles[(i + 1) % red_tiles.len()][0])
+        .map(|i| (i, red_tiles[i][1]))
+        .collect()
 }
 
 fn find_vertical_xs(red_tiles: &Vec<Corner>) -> Vec<(usize, u64)> {
-    (0..red_tiles.len()).filter(|i| red_tiles[*i][1] == red_tiles[(i + 1) % red_tiles.len()][1]).map(|i| (i, red_tiles[i][0])).collect()
+    (0..red_tiles.len())
+        .filter(|i| red_tiles[*i][1] == red_tiles[(i + 1) % red_tiles.len()][1])
+        .map(|i| (i, red_tiles[i][0]))
+        .collect()
 }
