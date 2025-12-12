@@ -18,3 +18,4 @@ pancurses = "0.17"
 itertools = "0.14.0"
 priority-queue = "2.1.1"
 multimap = "0.10"
+z3 = {version="0.19.6", features = ["gh-release"]}

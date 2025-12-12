@@ -1,8 +1,9 @@
-use std::{cmp::max, collections::BTreeSet, fmt::Display, iter::repeat, ops::BitXor, str::FromStr};
+use std::{cmp::max, fmt::Display, ops::BitXor, str::FromStr};
 
 use advent2025::{Part, advent_main, all_lines, search_iter::BfsIter};
 use anyhow::bail;
 use itertools::Itertools;
+use z3::{Optimize, Solver, ast::Int};
 
 fn main() -> anyhow::Result<()> {
     advent_main(|filename, part, options| {
@@ -20,38 +21,19 @@ fn main() -> anyhow::Result<()> {
                 println!("{score}");
             }
             Part::Two => {
-                if options.contains(&"-connections") {
-                    for machine in machines.iter() {
-                        let nums_connections = machine
-                            .buttons
-                            .iter()
-                            .map(|b| b.iter().filter(|v| *v).count())
-                            .collect_vec();
-                        let mut vars = BTreeSet::new();
-                        for button in machine.buttons.iter() {
-                            for i in button.active_bits() {
-                                vars.insert(i);
-                            }
-                        }
-                        if machine.target.num_bits as usize == vars.len() {
-                            println!("num_vars: {} {nums_connections:?} {machine}", vars.len());
-                        } else {
-                            println!(
-                                "num_bits: {} num_vars: {} {nums_connections:?}",
-                                machine.target.num_bits,
-                                vars.len()
-                            );
-                        }
-                    }
+                if options.contains(&"-m") {
+                    let score = machines
+                        .iter()
+                        .map(|m| m.alt_min_button_presses_joltage())
+                        .inspect(|s| println!("score: {s}"))
+                        .sum::<u64>();
+                    println!("{score}");
                 } else {
-                    let mut machines = machines;
-                    for machine in machines.iter_mut() {
-                        machine.descending_sort_buttons();
-                    }
                     let score = machines
                         .iter()
                         .map(|m| m.min_button_presses_joltage())
-                        .sum::<usize>();
+                        .inspect(|s| println!("score: {s}"))
+                        .sum::<u64>();
                     println!("{score}");
                 }
             }
@@ -74,46 +56,61 @@ impl MachineSpec {
         iter.depth_for(&found)
     }
 
-    fn descending_sort_buttons(&mut self) {
-        self.buttons.sort_by(|n1, n2| n1.popcount().cmp(&n2.popcount()).reverse());
-    }
-
-    fn min_button_presses_joltage(&self) -> usize {
-        let mut iter = BfsIter::new(
-            repeat(0).take(self.target.num_bits as usize).collect(),
-            |s| self.successors_joltage(s),
-        );
-        let found = iter
-            .by_ref()
-            .find(|counters| {
-                counters
-                    .iter()
-                    .enumerate()
-                    .all(|(i, c)| *c == self.joltages[i])
-            })
-            .unwrap();
-        iter.depth_for(&found)
-    }
-
     fn successors_indicator_lights(&self, bits: &Bits) -> Vec<Bits> {
         self.buttons.iter().map(|button| *bits ^ *button).collect()
     }
 
-    fn successors_joltage(&self, counters: &Vec<usize>) -> Vec<Vec<usize>> {
-        self.buttons
-            .iter()
-            .map(|button| {
-                let mut counters = counters.clone();
-                increase_joltage(button, &mut counters);
-                counters
-            })
-            .filter(|counters| {
-                counters
+    fn min_button_presses_joltage(&self) -> u64 {
+        let vars = (0..self.buttons.len())
+            .map(|i| Int::fresh_const(format!("n{i}").as_str()))
+            .collect_vec();
+        let solver = Solver::new();
+        for var in vars.iter() {
+            solver.assert(var.ge(0));
+        }
+        for i in 0..self.joltages.len() {
+            solver.assert(
+                self.buttons
                     .iter()
                     .enumerate()
-                    .all(|(i, c)| *c <= self.joltages[i])
-            })
-            .collect()
+                    .filter(|(_, b)| b.get(i as u16))
+                    .map(|(i, _)| &vars[i])
+                    .sum::<Int>()
+                    .eq(self.joltages[i] as u64),
+            );
+        }
+        solver
+            .solutions(vars, false)
+            .map(|s| s.iter().map(Int::as_u64).map(Option::unwrap).sum::<u64>())
+            .min()
+            .unwrap()
+    }
+
+    fn alt_min_button_presses_joltage(&self) -> u64 {
+        let vars = (0..self.buttons.len())
+            .map(|i| Int::fresh_const(format!("n{i}").as_str()))
+            .collect_vec();
+        let solver = Optimize::new();
+        for var in vars.iter() {
+            solver.assert(&var.ge(0));
+        }
+        for i in 0..self.joltages.len() {
+            solver.assert(
+                &self
+                    .buttons
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, b)| b.get(i as u16))
+                    .map(|(i, _)| &vars[i])
+                    .sum::<Int>()
+                    .eq(self.joltages[i] as u64),
+            );
+        }
+        solver.minimize(&vars.iter().sum::<Int>());
+        let model = solver.get_model().unwrap();
+        vars.iter()
+            .map(|var| model.eval(var, true).unwrap().as_u64().unwrap())
+            .sum()
     }
 
     fn assert_valid(machines: &Vec<Self>, filename: &str) -> anyhow::Result<()> {
@@ -124,12 +121,6 @@ impl MachineSpec {
                 .all(|(machine, line)| format!("{machine}") == *line)
         );
         Ok(())
-    }
-}
-
-fn increase_joltage(button: &Bits, counters: &mut Vec<usize>) {
-    for i in button.active_bits() {
-        counters[i] += 1;
     }
 }
 
@@ -223,10 +214,6 @@ impl Bits {
 
     fn active_bits(&self) -> impl Iterator<Item = usize> {
         self.iter().enumerate().filter(|(_, v)| *v).map(|(i, _)| i)
-    }
-
-    fn popcount(&self) -> usize {
-        self.active_bits().count()
     }
 }
 
