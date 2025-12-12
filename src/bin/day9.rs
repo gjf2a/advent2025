@@ -15,7 +15,9 @@ fn main() -> anyhow::Result<()> {
                 println!("{}", largest_rectangle_area(&rects));
             }
             Part::Two => {
-                let diffs = (0..red_tiles.len() - 1).map(|i| red_tiles[i].manhattan_distance(&red_tiles[i + 1])).collect_vec();
+                let diffs = (0..red_tiles.len() - 1)
+                    .map(|i| red_tiles[i].manhattan_distance(&red_tiles[i + 1]))
+                    .collect_vec();
                 let mut gcd_diffs = gcd(diffs[0], diffs[1]);
                 for i in 1..diffs.len() {
                     gcd_diffs = gcd(gcd_diffs, diffs[i]);
