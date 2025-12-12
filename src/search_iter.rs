@@ -40,7 +40,7 @@ pub struct GenericSearchIter<T: SearchNode, S: FnMut(&T) -> Vec<T>, Q: SearchQue
     queue: Q,
     depths: HashMap<T, usize>,
     parents: HashMap<T, Option<T>>,
-    successor: S,    
+    successor: S,
 }
 
 impl<T: SearchNode, S: FnMut(&T) -> Vec<T>, Q: SearchQueue<(T, usize)>> GenericSearchIter<T, S, Q> {
@@ -68,7 +68,9 @@ impl<T: SearchNode, S: FnMut(&T) -> Vec<T>, Q: SearchQueue<(T, usize)>> GenericS
     }
 }
 
-impl<T: SearchNode, S: FnMut(&T) -> Vec<T>, Q: SearchQueue<(T, usize)>> Iterator for GenericSearchIter<T, S, Q> {
+impl<T: SearchNode, S: FnMut(&T) -> Vec<T>, Q: SearchQueue<(T, usize)>> Iterator
+    for GenericSearchIter<T, S, Q>
+{
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -83,7 +85,9 @@ impl<T: SearchNode, S: FnMut(&T) -> Vec<T>, Q: SearchQueue<(T, usize)>> Iterator
             parent
         })
     }
-} 
+}
+
+pub type DfsIter<T, S> = GenericSearchIter<T, S, Vec<(T, usize)>>;
 
 pub type BfsIter<T, S> = GenericSearchIter<T, S, VecDeque<(T, usize)>>;
 
