@@ -11,34 +11,47 @@ trait_set! {
     pub trait SearchNode = Clone + Hash + Eq + Debug;
 }
 
-pub struct BfsIter<T: SearchNode, S: FnMut(&T) -> Vec<T>> {
-    queue: VecDeque<(T, usize)>,
-    depths: HashMap<T, usize>,
-    parents: HashMap<T, Option<T>>,
-    successor: S,
+pub trait SearchQueue<T>: Default {
+    fn add(&mut self, value: T);
+    fn remove(&mut self) -> Option<T>;
 }
 
-impl<T: SearchNode, S: FnMut(&T) -> Vec<T>> BfsIter<T, S> {
+impl<T> SearchQueue<T> for VecDeque<T> {
+    fn add(&mut self, value: T) {
+        self.push_back(value);
+    }
+
+    fn remove(&mut self) -> Option<T> {
+        self.pop_front()
+    }
+}
+
+impl<T> SearchQueue<T> for Vec<T> {
+    fn add(&mut self, value: T) {
+        self.push(value);
+    }
+
+    fn remove(&mut self) -> Option<T> {
+        self.pop()
+    }
+}
+
+pub struct GenericSearchIter<T: SearchNode, S: FnMut(&T) -> Vec<T>, Q: SearchQueue<(T, usize)>> {
+    queue: Q,
+    depths: HashMap<T, usize>,
+    parents: HashMap<T, Option<T>>,
+    successor: S,    
+}
+
+impl<T: SearchNode, S: FnMut(&T) -> Vec<T>, Q: SearchQueue<(T, usize)>> GenericSearchIter<T, S, Q> {
     pub fn new(start: T, successor: S) -> Self {
-        let mut queue = VecDeque::new();
-        queue.push_back((start.clone(), 0));
+        let mut queue = Q::default();
+        queue.add((start.clone(), 0));
         Self {
             queue,
             depths: hash_map!(start.clone() => 0),
             successor,
             parents: hash_map!(start.clone() => None),
-        }
-    }
-
-    pub fn multi_start<I: Iterator<Item = T>>(starts: I, successor: S) -> Self {
-        let queue = starts.map(|t| (t, 0)).collect::<VecDeque<_>>();
-        let depths = queue.iter().cloned().collect();
-        let parents = queue.iter().map(|(t, _)| (t.clone(), None)).collect();
-        Self {
-            queue,
-            depths,
-            successor,
-            parents,
         }
     }
 
@@ -55,20 +68,36 @@ impl<T: SearchNode, S: FnMut(&T) -> Vec<T>> BfsIter<T, S> {
     }
 }
 
-impl<T: SearchNode, S: FnMut(&T) -> Vec<T>> Iterator for BfsIter<T, S> {
+impl<T: SearchNode, S: FnMut(&T) -> Vec<T>, Q: SearchQueue<(T, usize)>> Iterator for GenericSearchIter<T, S, Q> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.queue.pop_front().map(|(parent, depth)| {
+        self.queue.remove().map(|(parent, depth)| {
             for child in (self.successor)(&parent) {
                 if !self.depths.contains_key(&child) {
                     self.depths.insert(child.clone(), depth + 1);
                     self.parents.insert(child.clone(), Some(parent.clone()));
-                    self.queue.push_back((child, depth + 1));
+                    self.queue.add((child, depth + 1));
                 }
             }
             parent
         })
+    }
+} 
+
+pub type BfsIter<T, S> = GenericSearchIter<T, S, VecDeque<(T, usize)>>;
+
+impl<T: SearchNode, S: FnMut(&T) -> Vec<T>> BfsIter<T, S> {
+    pub fn multi_start<I: Iterator<Item = T>>(starts: I, successor: S) -> Self {
+        let queue = starts.map(|t| (t, 0)).collect::<VecDeque<_>>();
+        let depths = queue.iter().cloned().collect();
+        let parents = queue.iter().map(|(t, _)| (t.clone(), None)).collect();
+        Self {
+            queue,
+            depths,
+            successor,
+            parents,
+        }
     }
 }
 
