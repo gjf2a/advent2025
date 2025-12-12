@@ -3,41 +3,22 @@ use std::{cmp::max, fmt::Display, ops::BitXor, str::FromStr};
 use advent2025::{Part, advent_main, all_lines, search_iter::BfsIter};
 use anyhow::bail;
 use itertools::Itertools;
-use z3::{Optimize, Solver, ast::Int};
+use z3::{Optimize, SatResult, ast::Int};
 
 fn main() -> anyhow::Result<()> {
-    advent_main(|filename, part, options| {
+    advent_main(|filename, part, _| {
         let machines = all_lines(filename)?
             .map(|line| line.parse::<MachineSpec>().unwrap())
             .collect_vec();
         MachineSpec::assert_valid(&machines, filename)?;
-
-        match part {
-            Part::One => {
-                let score = machines
-                    .iter()
-                    .map(|m| m.min_button_presses_indicator_lights())
-                    .sum::<usize>();
-                println!("{score}");
-            }
-            Part::Two => {
-                if options.contains(&"-m") {
-                    let score = machines
-                        .iter()
-                        .map(|m| m.alt_min_button_presses_joltage())
-                        .inspect(|s| println!("score: {s}"))
-                        .sum::<u64>();
-                    println!("{score}");
-                } else {
-                    let score = machines
-                        .iter()
-                        .map(|m| m.min_button_presses_joltage())
-                        .inspect(|s| println!("score: {s}"))
-                        .sum::<u64>();
-                    println!("{score}");
-                }
-            }
-        }
+        let score = machines
+            .iter()
+            .map(|m| match part {
+                Part::One => m.min_button_presses_indicator_lights(),
+                Part::Two => m.min_button_presses_joltage(),
+            })
+            .sum::<u64>();
+        println!("{score}");
         Ok(())
     })
 }
@@ -50,10 +31,10 @@ struct MachineSpec {
 }
 
 impl MachineSpec {
-    fn min_button_presses_indicator_lights(&self) -> usize {
+    fn min_button_presses_indicator_lights(&self) -> u64 {
         let mut iter = BfsIter::new(Bits::default(), |s| self.successors_indicator_lights(s));
         let found = iter.by_ref().find(|b| b.bits == self.target.bits).unwrap();
-        iter.depth_for(&found)
+        iter.depth_for(&found) as u64
     }
 
     fn successors_indicator_lights(&self, bits: &Bits) -> Vec<Bits> {
@@ -61,32 +42,6 @@ impl MachineSpec {
     }
 
     fn min_button_presses_joltage(&self) -> u64 {
-        let vars = (0..self.buttons.len())
-            .map(|i| Int::fresh_const(format!("n{i}").as_str()))
-            .collect_vec();
-        let solver = Solver::new();
-        for var in vars.iter() {
-            solver.assert(var.ge(0));
-        }
-        for i in 0..self.joltages.len() {
-            solver.assert(
-                self.buttons
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, b)| b.get(i as u16))
-                    .map(|(i, _)| &vars[i])
-                    .sum::<Int>()
-                    .eq(self.joltages[i] as u64),
-            );
-        }
-        solver
-            .solutions(vars, false)
-            .map(|s| s.iter().map(Int::as_u64).map(Option::unwrap).sum::<u64>())
-            .min()
-            .unwrap()
-    }
-
-    fn alt_min_button_presses_joltage(&self) -> u64 {
         let vars = (0..self.buttons.len())
             .map(|i| Int::fresh_const(format!("n{i}").as_str()))
             .collect_vec();
@@ -103,14 +58,19 @@ impl MachineSpec {
                     .filter(|(_, b)| b.get(i as u16))
                     .map(|(i, _)| &vars[i])
                     .sum::<Int>()
-                    .eq(self.joltages[i] as u64),
+                    .eq(Int::from_u64(self.joltages[i] as u64)),
             );
         }
         solver.minimize(&vars.iter().sum::<Int>());
-        let model = solver.get_model().unwrap();
-        vars.iter()
-            .map(|var| model.eval(var, true).unwrap().as_u64().unwrap())
-            .sum()
+        match solver.check(&[]) {
+            SatResult::Sat => {
+                let model = solver.get_model().unwrap();
+                vars.iter()
+                    .map(|var| model.eval(var, true).unwrap().as_u64().unwrap())
+                    .sum()
+            }
+            _ => panic!("Unsolvable"),
+        }
     }
 
     fn assert_valid(machines: &Vec<Self>, filename: &str) -> anyhow::Result<()> {
