@@ -1,11 +1,11 @@
-use std::{cmp::max, fmt::Display, iter::repeat, ops::BitXor, str::FromStr};
+use std::{cmp::max, collections::BTreeSet, fmt::Display, iter::repeat, ops::BitXor, str::FromStr};
 
 use advent2025::{Part, advent_main, all_lines, search_iter::BfsIter};
 use anyhow::bail;
 use itertools::Itertools;
 
 fn main() -> anyhow::Result<()> {
-    advent_main(|filename, part, _| {
+    advent_main(|filename, part, options| {
         let machines = all_lines(filename)?
             .map(|line| line.parse::<MachineSpec>().unwrap())
             .collect_vec();
@@ -20,11 +20,40 @@ fn main() -> anyhow::Result<()> {
                 println!("{score}");
             }
             Part::Two => {
-                let score = machines
-                    .iter()
-                    .map(|m| m.min_button_presses_joltage())
-                    .sum::<usize>();
-                println!("{score}");
+                if options.contains(&"-connections") {
+                    for machine in machines.iter() {
+                        let nums_connections = machine
+                            .buttons
+                            .iter()
+                            .map(|b| b.iter().filter(|v| *v).count())
+                            .collect_vec();
+                        let mut vars = BTreeSet::new();
+                        for button in machine.buttons.iter() {
+                            for i in button.active_bits() {
+                                vars.insert(i);
+                            }
+                        }
+                        if machine.target.num_bits as usize == vars.len() {
+                            println!("num_vars: {} {nums_connections:?} {machine}", vars.len());
+                        } else {
+                            println!(
+                                "num_bits: {} num_vars: {} {nums_connections:?}",
+                                machine.target.num_bits,
+                                vars.len()
+                            );
+                        }
+                    }
+                } else {
+                    let mut machines = machines;
+                    for machine in machines.iter_mut() {
+                        machine.descending_sort_buttons();
+                    }
+                    let score = machines
+                        .iter()
+                        .map(|m| m.min_button_presses_joltage())
+                        .sum::<usize>();
+                    println!("{score}");
+                }
             }
         }
         Ok(())
@@ -45,6 +74,10 @@ impl MachineSpec {
         iter.depth_for(&found)
     }
 
+    fn descending_sort_buttons(&mut self) {
+        self.buttons.sort_by(|n1, n2| n1.popcount().cmp(&n2.popcount()).reverse());
+    }
+
     fn min_button_presses_joltage(&self) -> usize {
         let mut iter = BfsIter::new(
             repeat(0).take(self.target.num_bits as usize).collect(),
@@ -52,12 +85,6 @@ impl MachineSpec {
         );
         let found = iter
             .by_ref()
-            .filter(|counters| {
-                counters
-                    .iter()
-                    .enumerate()
-                    .all(|(i, c)| *c <= self.joltages[i])
-            })
             .find(|counters| {
                 counters
                     .iter()
@@ -77,8 +104,14 @@ impl MachineSpec {
             .iter()
             .map(|button| {
                 let mut counters = counters.clone();
-                joltage_count(button, &mut counters);
+                increase_joltage(button, &mut counters);
                 counters
+            })
+            .filter(|counters| {
+                counters
+                    .iter()
+                    .enumerate()
+                    .all(|(i, c)| *c <= self.joltages[i])
             })
             .collect()
     }
@@ -94,8 +127,8 @@ impl MachineSpec {
     }
 }
 
-fn joltage_count(button: &Bits, counters: &mut Vec<usize>) {
-    for (i, _) in button.iter().enumerate().filter(|(_, v)| *v) {
+fn increase_joltage(button: &Bits, counters: &mut Vec<usize>) {
+    for i in button.active_bits() {
         counters[i] += 1;
     }
 }
@@ -136,12 +169,7 @@ impl Display for MachineSpec {
             .collect::<String>();
         write!(f, "[{target}]")?;
         for button in self.buttons.iter() {
-            let button_str = button
-                .iter()
-                .enumerate()
-                .filter(|(_, v)| *v)
-                .map(|(i, _)| format!("{i}"))
-                .join(",");
+            let button_str = button.active_bits().map(|i| format!("{i}")).join(",");
             write!(f, " ({button_str})")?;
         }
         let joltage_str = self.joltages.iter().join(",");
@@ -191,6 +219,14 @@ impl Bits {
 
     fn iter(&self) -> BitIterator {
         BitIterator::new(*self)
+    }
+
+    fn active_bits(&self) -> impl Iterator<Item = usize> {
+        self.iter().enumerate().filter(|(_, v)| *v).map(|(i, _)| i)
+    }
+
+    fn popcount(&self) -> usize {
+        self.active_bits().count()
     }
 }
 
